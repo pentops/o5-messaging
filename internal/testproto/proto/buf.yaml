@@ -1,12 +1,8 @@
 version: v1
 
 deps:
-  - buf.build/googleapis/googleapis
   - buf.build/bufbuild/protovalidate
   - buf.build/pentops/o5
-  - buf.build/pentops/listify
-  - buf.build/pentops/protostate
-  - buf.build/pentops/j5
 
 breaking:
   use:
