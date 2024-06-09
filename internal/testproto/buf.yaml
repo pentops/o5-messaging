@@ -1,0 +1,22 @@
+version: v1
+
+deps:
+  - buf.build/googleapis/googleapis
+  - buf.build/bufbuild/protovalidate
+  - buf.build/pentops/o5
+  - buf.build/pentops/listify
+  - buf.build/pentops/protostate
+  - buf.build/pentops/j5
+
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
+  except:
+    - PACKAGE_VERSION_SUFFIX # Allow test.v1.service - i.e. sub packages under the same version
+    - RPC_REQUEST_RESPONSE_UNIQUE
+    - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME
+    - SERVICE_SUFFIX

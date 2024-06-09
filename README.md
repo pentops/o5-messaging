@@ -1,1 +1,1 @@
-# o5-aws-messaging
+# o5-messaging for Go
