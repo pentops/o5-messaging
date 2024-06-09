@@ -12,8 +12,8 @@ type Sender[C any] interface {
 
 	// Send is called with a partially populated message and a payload.
 	// The sender is responsible for marshalling the payload into the message
-	// body, and may add headers or other metadata to the message.
-	// The generated code will populate MessageId, GrpcService, GrpcMethod, and
+	// body, setting MessageID and may add headers or other metadata to the message.
+	// The generated code will populate GrpcService, GrpcMethod, and
 	// where applicable, DestinationTopic and ReplyTo fields.
 	Send(ctx context.Context, sendContext C, msg *messaging_pb.Message, payload proto.Message) error
 

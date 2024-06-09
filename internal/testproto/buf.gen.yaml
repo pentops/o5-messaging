@@ -5,7 +5,7 @@ plugins:
     opt: module=github.com/pentops/o5-messaging.go
 
   - name: go-o5-messaging
-    path: ./internal/testproto/protoc-gen-go-o5-messaging.sh
+    path: ./protoc-gen-go-o5-messaging.sh
     out: .
     opt:
       - module=github.com/pentops/o5-messaging.go
