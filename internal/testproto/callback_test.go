@@ -1,4 +1,4 @@
-package testproto
+package o5msg
 
 // Run buf generate prior to running these tests to ensure the code matches the
 // plugin.
