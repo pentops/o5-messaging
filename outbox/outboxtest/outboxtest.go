@@ -37,26 +37,69 @@ func NewOutboxAsserter(t TB, conn sqrlx.Connection) *OutboxAsserter {
 	}
 }
 
-func (oa *OutboxAsserter) PopMessage(ctx context.Context, tb TB, msg proto.Message) {
+var txOptions = &sqrlx.TxOptions{
+	Retryable: true,
+	ReadOnly:  false,
+	Isolation: sql.LevelReadCommitted,
+}
+
+func getContext(t TB) context.Context {
+	t.Helper()
+	if ctx, ok := t.(interface{ Context() context.Context }); ok {
+		return ctx.Context()
+	}
+	return context.Background()
+}
+
+func MessageBodyMatches[T proto.Message](filter func(T) bool) condition {
+	return func(conditions *queryConditions) {
+		conditions.checkers = append(conditions.checkers, func(wrapper *messaging_pb.Message) (bool, error) {
+			body := (*new(T)).ProtoReflect().New().Interface().(T)
+			if err := protojson.Unmarshal(wrapper.Body.Value, body); err != nil {
+				fmt.Printf("error unmarshalling body: %v\n", err)
+				return false, err
+			}
+			return filter(body), nil
+		})
+	}
+}
+
+type condition func(*queryConditions)
+
+type queryConditions struct {
+	filters  []filter
+	checkers []checker
+}
+
+func (oa *OutboxAsserter) PopMessage(tb TB, msg proto.Message, conditions ...condition) {
 	tb.Helper()
 	typeURL := fmt.Sprintf("type.googleapis.com/%s", msg.ProtoReflect().Descriptor().FullName())
-	wrapper, err := oa.popWrapper(ctx, tb, sq.Eq{
-		fmt.Sprintf("%s->'body'->>'typeUrl'", oa.DataColumn): typeURL,
-	})
+
+	qc := &queryConditions{}
+	for _, condition := range conditions {
+		condition(qc)
+	}
+
+	messageTypeCondition(typeURL)(qc)
+
+	wrapper, err := oa.popWrapper(getContext(tb), tb, *qc)
 	if errors.Is(err, sql.ErrNoRows) {
 		tb.Fatalf("no message found for type %s", typeURL)
+	} else if errors.Is(err, multiMatchError) {
+		tb.Fatalf("found multiple messages for type %s", typeURL)
 	} else if err != nil {
 		tb.Fatal(err)
 	}
+
 	if err := protojson.Unmarshal(wrapper.Body.Value, msg); err != nil {
 		tb.Fatal(err)
 	}
 }
 
-func (oa *OutboxAsserter) AssertEmpty(ctx context.Context, tb TB) {
+func (oa *OutboxAsserter) AssertEmpty(tb TB) {
 	tb.Helper()
 	var count int
-	if err := oa.db.Transact(ctx, nil, func(ctx context.Context, tx sqrlx.Transaction) error {
+	if err := oa.db.Transact(getContext(tb), txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
 		return tx.SelectRow(ctx, sq.Select("COUNT(*)").
 			From(oa.TableName)).Scan(&count)
 	}); err != nil {
@@ -67,21 +110,137 @@ func (oa *OutboxAsserter) AssertEmpty(ctx context.Context, tb TB) {
 	}
 }
 
-func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, condition sq.Eq) (*messaging_pb.Message, error) {
+func (oa *OutboxAsserter) PurgeAll(tb TB) {
+	tb.Helper()
 
-	var msgBody []byte
-	if err := oa.db.Transact(ctx, nil, func(ctx context.Context, tx sqrlx.Transaction) error {
-		tb.Helper()
+	if err := oa.db.Transact(getContext(tb), txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
+		_, err := tx.Exec(ctx, sq.Delete(oa.TableName))
+		return err
+	}); err != nil {
+		tb.Fatal(err)
+	}
+}
 
-		var msgID string
+func (oa *OutboxAsserter) ForEachMessage(tb TB, fn func(*messaging_pb.Message)) {
+	tb.Helper()
 
-		if err := tx.SelectRow(ctx, sq.Select(oa.IDColumn, oa.DataColumn).
-			From(oa.TableName).
-			Where(condition).
-			OrderBy(oa.IDColumn).
-			Limit(1)).Scan(&msgID, &msgBody); err != nil {
+	if err := oa.db.Transact(getContext(tb), txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
+		rows, err := tx.Query(ctx, sq.Select(oa.DataColumn).
+			From(oa.TableName))
+		if err != nil {
 			return err
 		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var msgBody []byte
+			if err := rows.Scan(&msgBody); err != nil {
+				return err
+			}
+
+			wrapper := &messaging_pb.Message{}
+			if err := protojson.Unmarshal(msgBody, wrapper); err != nil {
+				return err
+			}
+
+			fn(wrapper)
+		}
+
+		return nil
+	}); err != nil {
+		tb.Fatal(err)
+	}
+}
+
+type checker func(*messaging_pb.Message) (bool, error)
+
+type filter func(*sq.SelectBuilder, outbox.Config)
+
+func messageTypeCondition(typeURL string) condition {
+	return func(conditions *queryConditions) {
+		conditions.filters = append(conditions.filters, messageTypeFilter(typeURL))
+	}
+}
+
+func messageTypeFilter(typeURL string) filter {
+	return func(sb *sq.SelectBuilder, cfg outbox.Config) {
+		sb.Where(sq.Eq{
+			fmt.Sprintf("%s->'body'->>'typeUrl'", cfg.DataColumn): typeURL,
+		})
+	}
+}
+
+var multiMatchError = errors.New("multiple messages matched")
+
+func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions queryConditions) (*messaging_pb.Message, error) {
+
+	query := sq.Select(oa.DataColumn).
+		From(oa.TableName).
+		OrderBy(oa.IDColumn)
+
+	for _, filter := range conditions.filters {
+		filter(query, oa.Config)
+	}
+
+	bodies := make([][]byte, 0, 1)
+
+	if err := oa.db.Transact(ctx, txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
+		tb.Helper()
+
+		var msgBody []byte
+
+		rows, err := tx.Select(ctx, query)
+		if err != nil {
+			return err
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			if err := rows.Scan(&msgBody); err != nil {
+				return err
+			}
+
+			bodies = append(bodies, msgBody)
+
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	matchedMessages := make([]*messaging_pb.Message, 0, 1)
+
+bodies:
+	for _, body := range bodies {
+		wrapper := &messaging_pb.Message{}
+		if err := protojson.Unmarshal(body, wrapper); err != nil {
+			return nil, err
+		}
+
+		for _, check := range conditions.checkers {
+			matches, err := check(wrapper)
+			if err != nil {
+				return nil, err
+			} else if !matches {
+				continue bodies
+			}
+		}
+
+		matchedMessages = append(matchedMessages, wrapper)
+	}
+
+	if len(matchedMessages) > 1 {
+		return nil, multiMatchError
+	}
+
+	if len(matchedMessages) < 1 {
+		return nil, sql.ErrNoRows
+	}
+
+	msgID := matchedMessages[0].MessageId
+	if err := oa.db.Transact(ctx, txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
+		tb.Helper()
 
 		if _, err := tx.Delete(ctx, sq.Delete(oa.TableName).
 			Where(sq.Eq{oa.IDColumn: msgID})); err != nil {
@@ -93,10 +252,5 @@ func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, condition sq.Eq
 		return nil, err
 	}
 
-	wrapper := &messaging_pb.Message{}
-	if err := protojson.Unmarshal(msgBody, wrapper); err != nil {
-		tb.Fatal(err)
-	}
-
-	return wrapper, nil
+	return matchedMessages[0], nil
 }
