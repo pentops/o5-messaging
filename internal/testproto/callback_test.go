@@ -12,8 +12,6 @@ import (
 	"github.com/pentops/o5-messaging.go/internal/testproto/gen/test/v1/test_tpb"
 	"github.com/pentops/o5-messaging.go/o5msg"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 )
 
 func Send(tx *transaction, msg *messaging_pb.Message) error {
@@ -24,17 +22,12 @@ type TestSender struct {
 	o5msg.TopicSet
 }
 
-func (s *TestSender) Send(ctx context.Context, tx *transaction, msg *messaging_pb.Message, payload proto.Message) error {
-	data, err := protojson.Marshal(payload)
+func (s *TestSender) Send(ctx context.Context, tx *transaction, msg o5msg.Message) error {
+	wrapper, err := o5msg.WrapMessage(msg)
 	if err != nil {
 		return err
 	}
-	msg.Body = &messaging_pb.Any{
-		TypeUrl:  fmt.Sprintf("type.googleapis.com/%T", payload.ProtoReflect().Descriptor().FullName()),
-		Value:    data,
-		Encoding: messaging_pb.WireEncoding_PROTOJSON,
-	}
-	return Send(tx, msg)
+	return Send(tx, wrapper)
 }
 
 type TestContext struct {
@@ -148,6 +141,7 @@ func TestCallback(t *testing.T) {
 
 		assert.Equal(t, 0, msgA.txIdx)
 		assert.Equal(t, "test.v1.topic.TestTopic", msgA.message.GrpcService)
+		assert.Equal(t, "type.googleapis.com/test.v1.topic.TestMessage", msgA.message.Body.TypeUrl)
 
 		assert.Equal(t, 0, msgB.txIdx)
 		assert.Equal(t, "test.v1.topic.GreetingRequestTopic", msgB.message.GrpcService)

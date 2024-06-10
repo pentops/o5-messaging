@@ -53,6 +53,20 @@ func (oa *OutboxAsserter) PopMessage(ctx context.Context, tb TB, msg proto.Messa
 	}
 }
 
+func (oa *OutboxAsserter) AssertEmpty(ctx context.Context, tb TB) {
+	tb.Helper()
+	var count int
+	if err := oa.db.Transact(ctx, nil, func(ctx context.Context, tx sqrlx.Transaction) error {
+		return tx.SelectRow(ctx, sq.Select("COUNT(*)").
+			From(oa.TableName)).Scan(&count)
+	}); err != nil {
+		tb.Fatal(err)
+	}
+	if count > 0 {
+		tb.Fatalf("expected outbox to be empty, but found %d messages", count)
+	}
+}
+
 func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, condition sq.Eq) (*messaging_pb.Message, error) {
 
 	var msgBody []byte
