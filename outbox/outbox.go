@@ -8,7 +8,6 @@ import (
 	"github.com/pentops/o5-messaging.go/o5msg"
 	"github.com/pentops/sqrlx.go/sqrlx"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 )
 
 type Config struct {
@@ -56,11 +55,6 @@ func (ss *Sender) Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Mess
 		Values(wrapper.MessageId, headers.Encode(), msgBytes))
 
 	return err
-}
-
-type OutboxMessage interface {
-	O5Header() o5msg.Header
-	proto.Message
 }
 
 // DEPRECATED: Send bypasses registration and is included for an easier
