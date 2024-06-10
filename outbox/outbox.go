@@ -18,11 +18,6 @@ type Config struct {
 	DataColumn    string
 }
 
-type Sender struct {
-	Config
-	o5msg.TopicSet
-}
-
 var DefaultConfig = Config{
 	TableName:     "outbox",
 	IDColumn:      "id",
@@ -33,6 +28,18 @@ var DefaultConfig = Config{
 var DefaultSender *Sender = &Sender{
 	Config:   DefaultConfig,
 	TopicSet: o5msg.TopicSet{},
+}
+
+type Sender struct {
+	Config
+	o5msg.TopicSet
+}
+
+func NewSender(config Config) *Sender {
+	return &Sender{
+		Config:   config,
+		TopicSet: o5msg.TopicSet{},
+	}
 }
 
 // Send places the message in the outbox table.
@@ -65,8 +72,8 @@ func Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Message) error {
 }
 
 type DirectPublisher struct {
-	Sender
-	db *sqrlx.Wrapper
+	sender *Sender
+	db     *sqrlx.Wrapper
 }
 
 func (dp *DirectPublisher) Publish(ctx context.Context, msg o5msg.Message) error {
@@ -75,6 +82,17 @@ func (dp *DirectPublisher) Publish(ctx context.Context, msg o5msg.Message) error
 		ReadOnly:  false,
 		Retryable: true,
 	}, func(ctx context.Context, tx sqrlx.Transaction) error {
-		return dp.Send(ctx, tx, msg)
+		return dp.sender.Send(ctx, tx, msg)
 	})
+}
+
+func NewDirectPublisher(conn sqrlx.Connection, sender *Sender) (*DirectPublisher, error) {
+	db, err := sqrlx.New(conn, sqrl.Dollar)
+	if err != nil {
+		return nil, err
+	}
+	return &DirectPublisher{
+		sender: sender,
+		db:     db,
+	}, nil
 }
