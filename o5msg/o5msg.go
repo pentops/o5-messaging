@@ -20,27 +20,36 @@ type Registry interface {
 	Register(TopicDescriptor)
 }
 
-// Sender immediately marshalls and places the message into the next layer, e.g.
+// TxSender immediately marshalls and places the message into the next layer, e.g.
 // a database transaction or a network call. Generated code requires this
 // interface to build a NewFooSender
-type Sender[C any] interface {
+type TxSender[T any] interface {
 	Registry
 
 	// Send is called with an un-marshalled message and routing information
 	// populated by the generated code.
 	// The sender is responsible for building and sending an o5.messaging.v1.Message
-	Send(ctx context.Context, sendContext C, msg Message) error
+	Send(ctx context.Context, sendContext T, msg Message) error
 }
 
 // Collector is the counterpart to Sender, and is used to queue messages for
 // later marshalling and sending. This allows the caller to push error handling
 // to a later call but is otherwise identical in purpose and functionality
-type Collector[C any] interface {
+type Collector[T any] interface {
 	Registry
 
 	// Collect queues the message for later marshalling and sending, deferring
 	// marshalling until the end of an operation, e.g. a psm state transition.
-	Collect(sendContext C, msg Message)
+	Collect(sendContext T, msg Message)
+}
+
+// Publisher sends messages directly, no transactions or queues. Useful for
+// workers which aren't using an outbox pattern
+type Publisher interface {
+	Registry
+
+	// Publish sends the message directly, without any transaction context
+	Publish(ctx context.Context, msg Message) error
 }
 
 type TopicDescriptor struct {

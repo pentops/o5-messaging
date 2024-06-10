@@ -196,12 +196,12 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 
 	g.P("// Service: " + service.GoName)
 
-	senderName := service.GoName + "Sender"
+	senderName := service.GoName + "TxSender"
 	g.P("type ", senderName, "[C any] struct {")
-	g.P("  Sender ", o5msgPkg.Ident("Sender"), "[C]")
+	g.P("  sender ", o5msgPkg.Ident("TxSender"), "[C]")
 	g.P("}")
 	g.P()
-	g.P("func New", senderName, "[C any] (sender ", o5msgPkg.Ident("Sender"), "[C]) (*", senderName, "[C]) {")
+	g.P("func New", senderName, "[C any] (sender ", o5msgPkg.Ident("TxSender"), "[C]) (*", senderName, "[C]) {")
 	g.P("  sender.Register(", o5msgPkg.Ident("TopicDescriptor"), "{")
 	g.P("    Service: \"", service.Desc.FullName(), "\",")
 	g.P("    Methods: []", o5msgPkg.Ident("MethodDescriptor"), "{")
@@ -214,16 +214,16 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 	g.P("    },")
 
 	g.P("  })")
-	g.P("  return &", senderName, "[C]{Sender: sender}")
+	g.P("  return &", senderName, "[C]{sender: sender}")
 	g.P("}")
 	g.P()
 
-	CollectorName := service.GoName + "Collector"
-	g.P("type ", CollectorName, "[C any] struct {")
-	g.P("  Collector ", o5msgPkg.Ident("Collector"), "[C]")
+	collectorName := service.GoName + "Collector"
+	g.P("type ", collectorName, "[C any] struct {")
+	g.P("  collector ", o5msgPkg.Ident("Collector"), "[C]")
 	g.P("}")
 	g.P()
-	g.P("func New", CollectorName, "[C any] (collector ", o5msgPkg.Ident("Collector"), "[C]) (*", CollectorName, "[C]) {")
+	g.P("func New", collectorName, "[C any] (collector ", o5msgPkg.Ident("Collector"), "[C]) (*", collectorName, "[C]) {")
 	g.P("  collector.Register(", o5msgPkg.Ident("TopicDescriptor"), "{")
 	g.P("    Service: \"", service.Desc.FullName(), "\",")
 	g.P("    Methods: []", o5msgPkg.Ident("MethodDescriptor"), "{")
@@ -236,7 +236,29 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 	g.P("    },")
 
 	g.P("  })")
-	g.P("  return &", CollectorName, "[C]{Collector: collector}")
+	g.P("  return &", collectorName, "[C]{collector: collector}")
+	g.P("}")
+	g.P()
+
+	publisherName := service.GoName + "Publisher"
+	g.P("type ", publisherName, " struct {")
+	g.P("  publisher ", o5msgPkg.Ident("Publisher"))
+	g.P("}")
+	g.P()
+	g.P("func New", publisherName, " (publisher ", o5msgPkg.Ident("Publisher"), ") (*", publisherName, ") {")
+	g.P("  publisher.Register(", o5msgPkg.Ident("TopicDescriptor"), "{")
+	g.P("    Service: \"", service.Desc.FullName(), "\",")
+	g.P("    Methods: []", o5msgPkg.Ident("MethodDescriptor"), "{")
+	for _, method := range parsedMethods {
+		g.P("      {")
+		g.P("        Name: \"", method.Desc.Name(), "\",")
+		g.P("        Message: (*", method.Input.GoIdent, ").ProtoReflect(nil).Descriptor(),")
+		g.P("      },")
+	}
+	g.P("    },")
+
+	g.P("  })")
+	g.P("  return &", publisherName, "{publisher: publisher}")
 	g.P("}")
 	g.P()
 
@@ -271,14 +293,18 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 		}
 		g.P("  return header")
 		g.P("}")
-		g.P("")
+		g.P()
 
 		g.P("func (send ", senderName, "[C]) ", method.GoName, "(ctx ", contextPkg.Ident("Context"), ", sendContext C, msg *", method.Input.GoIdent, ") error {")
-		g.P("  return send.Sender.Send(ctx, sendContext, msg)")
+		g.P("  return send.sender.Send(ctx, sendContext, msg)")
 		g.P("}")
 		g.P()
-		g.P("func (collect ", CollectorName, "[C]) ", method.GoName, "(sendContext C, msg *", method.Input.GoIdent, ") {")
-		g.P("  collect.Collector.Collect(sendContext, msg)")
+		g.P("func (collect ", collectorName, "[C]) ", method.GoName, "(sendContext C, msg *", method.Input.GoIdent, ") {")
+		g.P("  collect.collector.Collect(sendContext, msg)")
+		g.P("}")
+		g.P()
+		g.P("func (publish ", publisherName, ") ", method.GoName, "(ctx ", contextPkg.Ident("Context"), ", msg *", method.Input.GoIdent, ") {")
+		g.P("  publish.publisher.Publish(ctx, msg)")
 		g.P("}")
 
 		/*

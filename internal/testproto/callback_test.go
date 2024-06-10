@@ -72,9 +72,9 @@ func (r *runner) Transact(t testing.TB, cb func(testing.TB, *transaction) error)
 func TestCallback(t *testing.T) {
 	ts := &TestSender{}
 	ctx := context.Background()
-	testTopic := test_tpb.NewTestTopicSender(ts)
-	greetingRequestTopic := test_tpb.NewGreetingRequestTopicSender(ts)
-	greetingResponseTopic := test_tpb.NewGreetingResponseTopicSender(ts)
+	testTopic := test_tpb.NewTestTopicTxSender(ts)
+	greetingRequestTopic := test_tpb.NewGreetingRequestTopicTxSender(ts)
+	greetingResponseTopic := test_tpb.NewGreetingResponseTopicTxSender(ts)
 
 	t.Run("Topics should be registered", func(t *testing.T) {
 		allTopics := ts.TopicSet

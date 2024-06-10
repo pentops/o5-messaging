@@ -12,11 +12,11 @@ import (
 )
 
 // Service: TestTopic
-type TestTopicSender[C any] struct {
-	Sender o5msg.Sender[C]
+type TestTopicTxSender[C any] struct {
+	sender o5msg.TxSender[C]
 }
 
-func NewTestTopicSender[C any](sender o5msg.Sender[C]) *TestTopicSender[C] {
+func NewTestTopicTxSender[C any](sender o5msg.TxSender[C]) *TestTopicTxSender[C] {
 	sender.Register(o5msg.TopicDescriptor{
 		Service: "test.v1.topic.TestTopic",
 		Methods: []o5msg.MethodDescriptor{
@@ -26,11 +26,11 @@ func NewTestTopicSender[C any](sender o5msg.Sender[C]) *TestTopicSender[C] {
 			},
 		},
 	})
-	return &TestTopicSender[C]{Sender: sender}
+	return &TestTopicTxSender[C]{sender: sender}
 }
 
 type TestTopicCollector[C any] struct {
-	Collector o5msg.Collector[C]
+	collector o5msg.Collector[C]
 }
 
 func NewTestTopicCollector[C any](collector o5msg.Collector[C]) *TestTopicCollector[C] {
@@ -43,7 +43,24 @@ func NewTestTopicCollector[C any](collector o5msg.Collector[C]) *TestTopicCollec
 			},
 		},
 	})
-	return &TestTopicCollector[C]{Collector: collector}
+	return &TestTopicCollector[C]{collector: collector}
+}
+
+type TestTopicPublisher struct {
+	publisher o5msg.Publisher
+}
+
+func NewTestTopicPublisher(publisher o5msg.Publisher) *TestTopicPublisher {
+	publisher.Register(o5msg.TopicDescriptor{
+		Service: "test.v1.topic.TestTopic",
+		Methods: []o5msg.MethodDescriptor{
+			{
+				Name:    "Test",
+				Message: (*TestMessage).ProtoReflect(nil).Descriptor(),
+			},
+		},
+	})
+	return &TestTopicPublisher{publisher: publisher}
 }
 
 // Method: Test
@@ -57,20 +74,24 @@ func (msg *TestMessage) O5MessageHeader() o5msg.Header {
 	return header
 }
 
-func (send TestTopicSender[C]) Test(ctx context.Context, sendContext C, msg *TestMessage) error {
-	return send.Sender.Send(ctx, sendContext, msg)
+func (send TestTopicTxSender[C]) Test(ctx context.Context, sendContext C, msg *TestMessage) error {
+	return send.sender.Send(ctx, sendContext, msg)
 }
 
 func (collect TestTopicCollector[C]) Test(sendContext C, msg *TestMessage) {
-	collect.Collector.Collect(sendContext, msg)
+	collect.collector.Collect(sendContext, msg)
+}
+
+func (publish TestTopicPublisher) Test(ctx context.Context, msg *TestMessage) {
+	publish.publisher.Publish(ctx, msg)
 }
 
 // Service: GreetingRequestTopic
-type GreetingRequestTopicSender[C any] struct {
-	Sender o5msg.Sender[C]
+type GreetingRequestTopicTxSender[C any] struct {
+	sender o5msg.TxSender[C]
 }
 
-func NewGreetingRequestTopicSender[C any](sender o5msg.Sender[C]) *GreetingRequestTopicSender[C] {
+func NewGreetingRequestTopicTxSender[C any](sender o5msg.TxSender[C]) *GreetingRequestTopicTxSender[C] {
 	sender.Register(o5msg.TopicDescriptor{
 		Service: "test.v1.topic.GreetingRequestTopic",
 		Methods: []o5msg.MethodDescriptor{
@@ -80,11 +101,11 @@ func NewGreetingRequestTopicSender[C any](sender o5msg.Sender[C]) *GreetingReque
 			},
 		},
 	})
-	return &GreetingRequestTopicSender[C]{Sender: sender}
+	return &GreetingRequestTopicTxSender[C]{sender: sender}
 }
 
 type GreetingRequestTopicCollector[C any] struct {
-	Collector o5msg.Collector[C]
+	collector o5msg.Collector[C]
 }
 
 func NewGreetingRequestTopicCollector[C any](collector o5msg.Collector[C]) *GreetingRequestTopicCollector[C] {
@@ -97,7 +118,24 @@ func NewGreetingRequestTopicCollector[C any](collector o5msg.Collector[C]) *Gree
 			},
 		},
 	})
-	return &GreetingRequestTopicCollector[C]{Collector: collector}
+	return &GreetingRequestTopicCollector[C]{collector: collector}
+}
+
+type GreetingRequestTopicPublisher struct {
+	publisher o5msg.Publisher
+}
+
+func NewGreetingRequestTopicPublisher(publisher o5msg.Publisher) *GreetingRequestTopicPublisher {
+	publisher.Register(o5msg.TopicDescriptor{
+		Service: "test.v1.topic.GreetingRequestTopic",
+		Methods: []o5msg.MethodDescriptor{
+			{
+				Name:    "Greeting",
+				Message: (*GreetingMessage).ProtoReflect(nil).Descriptor(),
+			},
+		},
+	})
+	return &GreetingRequestTopicPublisher{publisher: publisher}
 }
 
 // Method: Greeting
@@ -111,20 +149,24 @@ func (msg *GreetingMessage) O5MessageHeader() o5msg.Header {
 	return header
 }
 
-func (send GreetingRequestTopicSender[C]) Greeting(ctx context.Context, sendContext C, msg *GreetingMessage) error {
-	return send.Sender.Send(ctx, sendContext, msg)
+func (send GreetingRequestTopicTxSender[C]) Greeting(ctx context.Context, sendContext C, msg *GreetingMessage) error {
+	return send.sender.Send(ctx, sendContext, msg)
 }
 
 func (collect GreetingRequestTopicCollector[C]) Greeting(sendContext C, msg *GreetingMessage) {
-	collect.Collector.Collect(sendContext, msg)
+	collect.collector.Collect(sendContext, msg)
+}
+
+func (publish GreetingRequestTopicPublisher) Greeting(ctx context.Context, msg *GreetingMessage) {
+	publish.publisher.Publish(ctx, msg)
 }
 
 // Service: GreetingResponseTopic
-type GreetingResponseTopicSender[C any] struct {
-	Sender o5msg.Sender[C]
+type GreetingResponseTopicTxSender[C any] struct {
+	sender o5msg.TxSender[C]
 }
 
-func NewGreetingResponseTopicSender[C any](sender o5msg.Sender[C]) *GreetingResponseTopicSender[C] {
+func NewGreetingResponseTopicTxSender[C any](sender o5msg.TxSender[C]) *GreetingResponseTopicTxSender[C] {
 	sender.Register(o5msg.TopicDescriptor{
 		Service: "test.v1.topic.GreetingResponseTopic",
 		Methods: []o5msg.MethodDescriptor{
@@ -134,11 +176,11 @@ func NewGreetingResponseTopicSender[C any](sender o5msg.Sender[C]) *GreetingResp
 			},
 		},
 	})
-	return &GreetingResponseTopicSender[C]{Sender: sender}
+	return &GreetingResponseTopicTxSender[C]{sender: sender}
 }
 
 type GreetingResponseTopicCollector[C any] struct {
-	Collector o5msg.Collector[C]
+	collector o5msg.Collector[C]
 }
 
 func NewGreetingResponseTopicCollector[C any](collector o5msg.Collector[C]) *GreetingResponseTopicCollector[C] {
@@ -151,7 +193,24 @@ func NewGreetingResponseTopicCollector[C any](collector o5msg.Collector[C]) *Gre
 			},
 		},
 	})
-	return &GreetingResponseTopicCollector[C]{Collector: collector}
+	return &GreetingResponseTopicCollector[C]{collector: collector}
+}
+
+type GreetingResponseTopicPublisher struct {
+	publisher o5msg.Publisher
+}
+
+func NewGreetingResponseTopicPublisher(publisher o5msg.Publisher) *GreetingResponseTopicPublisher {
+	publisher.Register(o5msg.TopicDescriptor{
+		Service: "test.v1.topic.GreetingResponseTopic",
+		Methods: []o5msg.MethodDescriptor{
+			{
+				Name:    "Response",
+				Message: (*ResponseMessage).ProtoReflect(nil).Descriptor(),
+			},
+		},
+	})
+	return &GreetingResponseTopicPublisher{publisher: publisher}
 }
 
 // Method: Response
@@ -172,10 +231,14 @@ func (msg *ResponseMessage) O5MessageHeader() o5msg.Header {
 	return header
 }
 
-func (send GreetingResponseTopicSender[C]) Response(ctx context.Context, sendContext C, msg *ResponseMessage) error {
-	return send.Sender.Send(ctx, sendContext, msg)
+func (send GreetingResponseTopicTxSender[C]) Response(ctx context.Context, sendContext C, msg *ResponseMessage) error {
+	return send.sender.Send(ctx, sendContext, msg)
 }
 
 func (collect GreetingResponseTopicCollector[C]) Response(sendContext C, msg *ResponseMessage) {
-	collect.Collector.Collect(sendContext, msg)
+	collect.collector.Collect(sendContext, msg)
+}
+
+func (publish GreetingResponseTopicPublisher) Response(ctx context.Context, msg *ResponseMessage) {
+	publish.publisher.Publish(ctx, msg)
 }
