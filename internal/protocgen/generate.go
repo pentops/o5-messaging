@@ -216,16 +216,35 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 	g.P("  })")
 	g.P("  return &", senderName, "[C]{Sender: sender}")
 	g.P("}")
+	g.P()
 
+	CollectorName := service.GoName + "Collector"
+	g.P("type ", CollectorName, "[C any] struct {")
+	g.P("  Collector ", o5msgPkg.Ident("Collector"), "[C]")
+	g.P("}")
+	g.P()
+	g.P("func New", CollectorName, "[C any] (collector ", o5msgPkg.Ident("Collector"), "[C]) (*", CollectorName, "[C]) {")
+	g.P("  collector.Register(", o5msgPkg.Ident("TopicDescriptor"), "{")
+	g.P("    Service: \"", service.Desc.FullName(), "\",")
+	g.P("    Methods: []", o5msgPkg.Ident("MethodDescriptor"), "{")
+	for _, method := range parsedMethods {
+		g.P("      {")
+		g.P("        Name: \"", method.Desc.Name(), "\",")
+		g.P("        Message: (*", method.Input.GoIdent, ").ProtoReflect(nil).Descriptor(),")
+		g.P("      },")
+	}
+	g.P("    },")
+
+	g.P("  })")
+	g.P("  return &", CollectorName, "[C]{Collector: collector}")
+	g.P("}")
 	g.P()
 
 	for _, method := range parsedMethods {
 		g.P("// Method: " + method.GoName)
 		g.P("")
-
-		g.P("func (send ", senderName, "[C]) ", method.GoName, "(ctx ", contextPkg.Ident("Context"), ", sendContext C, msg *", method.Input.GoIdent, ") error {")
-
-		g.P("  wrappedMsg := &", o5MessagePkg.Ident("Message"), "{")
+		g.P("func (msg *", method.Input.GoIdent, ") O5MessageHeader() ", o5msgPkg.Ident("Header"), " {")
+		g.P("  header := ", o5msgPkg.Ident("Header"), "{")
 		g.P("    GrpcService: \"", service.Desc.FullName(), "\",")
 		g.P("    GrpcMethod: \"", method.Desc.Name(), "\",")
 		g.P("    Headers: map[string]string{")
@@ -243,14 +262,23 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 		g.P("  }")
 		if method.replyToField != nil {
 			g.P("if msg.Request != nil {")
-			g.P("wrappedMsg.Extension = &", o5MessagePkg.Ident("Message_Reply_"), "{")
+			g.P("header.Extension = &", o5MessagePkg.Ident("Message_Reply_"), "{")
 			g.P("	Reply: &", o5MessagePkg.Ident("Message_Reply"), "{")
 			g.P("		ReplyTo: msg.", method.replyToField.GoName, ".ReplyTo,")
 			g.P("	},")
 			g.P("}")
 			g.P("}")
 		}
-		g.P("  return send.Sender.Send(ctx, sendContext, wrappedMsg, msg)")
+		g.P("  return header")
+		g.P("}")
+		g.P("")
+
+		g.P("func (send ", senderName, "[C]) ", method.GoName, "(ctx ", contextPkg.Ident("Context"), ", sendContext C, msg *", method.Input.GoIdent, ") error {")
+		g.P("  return send.Sender.Send(ctx, sendContext, msg)")
+		g.P("}")
+		g.P()
+		g.P("func (collect ", CollectorName, "[C]) ", method.GoName, "(sendContext C, msg *", method.Input.GoIdent, ") {")
+		g.P("  collect.Collector.Collect(sendContext, msg)")
 		g.P("}")
 
 		/*

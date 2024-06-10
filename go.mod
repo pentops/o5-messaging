@@ -6,9 +6,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/pentops/o5-go v0.0.0-20240609002711-65864a0f7d38
 	github.com/pentops/pgtest.go v0.0.0-20240604005819-2035f4562734
-	github.com/pentops/sqrlx.go v0.0.0-20240108202916-8687fdf983c0
+	github.com/pentops/sqrlx.go v0.0.0-20240523172712-b615a994d8c0
 	github.com/stretchr/testify v1.9.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2-0.20240529085009-ca837e5c658b
 )
 
 require (
@@ -21,7 +21,10 @@ require (
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.1-20240508200655-46a4cf4ba109.1 // indirect
+	github.com/kr/pretty v0.1.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pressly/goose v2.7.0+incompatible // indirect
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )

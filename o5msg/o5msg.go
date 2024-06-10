@@ -2,26 +2,45 @@ package o5msg
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/pentops/o5-go/messaging/v1/messaging_pb"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type Sender[C any] interface {
-
-	// Send is called with a partially populated message and a payload.
-	// The sender is responsible for marshalling the payload into the message
-	// body, setting MessageID and may add headers or other metadata to the message.
-	// The generated code will populate GrpcService, GrpcMethod, and
-	// where applicable, DestinationTopic and ReplyTo fields.
-	Send(ctx context.Context, sendContext C, msg *messaging_pb.Message, payload proto.Message) error
-
-	// Register is called when a new Topic is created using ths Sender, allowing
-	// the sender to handle reflection, pre-loading of validation etc.
-	// Implementation should store the descriptor only, and process later if
-	// context and errors are required.
+// Registry allows the sender/collector to handle reflection, pre-loading of validation etc.
+// Implementation should store the descriptor only, and process later if
+// context and errors are required.
+type Registry interface {
+	// Register is called when a new Topic is created using ths Sender
 	Register(TopicDescriptor)
+}
+
+// Sender immediately marshalls and places the message into the next layer, e.g.
+// a database transaction or a network call. Generated code requires this
+// interface to build a NewFooSender
+type Sender[C any] interface {
+	Registry
+
+	// Send is called with an un-marshalled message and routing information
+	// populated by the generated code.
+	// The sender is responsible for building and sending an o5.messaging.v1.Message
+	Send(ctx context.Context, sendContext C, msg Message) error
+}
+
+// Collector is the counterpart to Sender, and is used to queue messages for
+// later marshalling and sending. This allows the caller to push error handling
+// to a later call but is otherwise identical in purpose and functionality
+type Collector[C any] interface {
+	Registry
+
+	// Collect queues the message for later marshalling and sending, deferring
+	// marshalling until the end of an operation, e.g. a psm state transition.
+	Collect(sendContext C, msg Message)
 }
 
 type TopicDescriptor struct {
@@ -40,4 +59,53 @@ type TopicSet []TopicDescriptor
 // Register adds a new TopicDescriptor to the TopicSet
 func (ts *TopicSet) Register(td TopicDescriptor) {
 	*ts = append(*ts, td)
+}
+
+// Message is implemented by all method bodies in the generated code. The
+// sender/collector should use the O5Header method to get the routing
+// information, and 'blindly' marshal the message body (e.g. using protojson)
+type Message interface {
+	O5MessageHeader() Header
+	proto.Message
+}
+
+// Header is produced by generated code, responsibility for these fields is on
+// the generated code. The sender/collector is responsible for mapping this to
+// the fields of the wrapper message.
+type Header struct {
+	GrpcService      string
+	GrpcMethod       string
+	Headers          map[string]string
+	DestinationTopic string
+	Extension        messaging_pb.IsMessage_Extension
+}
+
+// WrapMessage returns the *messaging_pb.Message for the given Message, using
+// protojson encoding. It does not set SourceApp and SourceEnv, as they should
+// be set by the infrastructure layer when placing the message into a
+// broker/bus.
+func WrapMessage(msg Message) (*messaging_pb.Message, error) {
+	bodyData, err := protojson.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	header := msg.O5MessageHeader()
+
+	wrapper := &messaging_pb.Message{
+		MessageId:   uuid.New().String(),
+		Timestamp:   timestamppb.Now(),
+		GrpcService: header.GrpcService,
+		GrpcMethod:  header.GrpcMethod,
+		Body: &messaging_pb.Any{
+			TypeUrl:  fmt.Sprintf("type.googleapis.com/%s", msg.ProtoReflect().Descriptor().FullName()),
+			Value:    bodyData,
+			Encoding: messaging_pb.WireEncoding_PROTOJSON,
+		},
+		DestinationTopic: header.DestinationTopic,
+		Headers:          header.Headers,
+		Extension:        header.Extension,
+	}
+
+	return wrapper, nil
 }

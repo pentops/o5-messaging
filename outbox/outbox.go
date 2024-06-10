@@ -2,12 +2,9 @@ package outbox
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	"github.com/elgris/sqrl"
-	"github.com/google/uuid"
-	"github.com/pentops/o5-go/messaging/v1/messaging_pb"
 	"github.com/pentops/o5-messaging.go/o5msg"
 	"github.com/pentops/sqrlx.go/sqrlx"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -38,23 +35,14 @@ var DefaultSender *Sender = &Sender{
 	TopicSet: o5msg.TopicSet{},
 }
 
-func Send(ctx context.Context, tx sqrlx.Transaction, msg *messaging_pb.Message, payload proto.Message) error {
-	return DefaultSender.Send(ctx, tx, msg, payload)
-}
-
-func (ss *Sender) Send(ctx context.Context, tx sqrlx.Transaction, msg *messaging_pb.Message, payload proto.Message) error {
-	bodyBytes, err := protojson.Marshal(payload)
+// Send places the message in the outbox table.
+func (ss *Sender) Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Message) error {
+	wrapper, err := o5msg.WrapMessage(msg)
 	if err != nil {
 		return err
 	}
 
-	msg.Body = &messaging_pb.Any{
-		TypeUrl:  fmt.Sprintf("type.googleapis.com/%s", payload.ProtoReflect().Descriptor().FullName()),
-		Value:    bodyBytes,
-		Encoding: messaging_pb.WireEncoding_PROTOJSON,
-	}
-
-	msgBytes, err := protojson.Marshal(msg)
+	msgBytes, err := protojson.Marshal(wrapper)
 	if err != nil {
 		return err
 	}
@@ -63,11 +51,20 @@ func (ss *Sender) Send(ctx context.Context, tx sqrlx.Transaction, msg *messaging
 		"Content-Type": []string{"application/json"},
 	}
 
-	msg.MessageId = uuid.New().String()
-
 	_, err = tx.Insert(ctx, sqrl.Insert(ss.TableName).
 		Columns(ss.IDColumn, ss.HeadersColumn, ss.DataColumn).
-		Values(msg.MessageId, headers.Encode(), msgBytes))
+		Values(wrapper.MessageId, headers.Encode(), msgBytes))
 
 	return err
+}
+
+type OutboxMessage interface {
+	O5Header() o5msg.Header
+	proto.Message
+}
+
+// DEPRECATED: Send bypasses registration and is included for an easier
+// transition to typed senders / collectors
+func Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Message) error {
+	return DefaultSender.Send(ctx, tx, msg)
 }
