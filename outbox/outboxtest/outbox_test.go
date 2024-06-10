@@ -47,7 +47,7 @@ func TestOutboxSend(t *testing.T) {
 	}
 
 	msg := &test_tpb.TestMessage{}
-	outboxAsserter.PopMessage(ctx, t, msg)
+	outboxAsserter.PopMessage(t, msg)
 	if msg.Message != "Hello, World!" {
 		t.Fatalf("expected message to be 'Hello, World!', got %q", msg.Message)
 	}
