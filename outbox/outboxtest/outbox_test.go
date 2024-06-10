@@ -31,7 +31,7 @@ func TestOutboxSend(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testSender := test_tpb.NewTestTopicSender(outbox.DefaultSender)
+	testSender := test_tpb.NewTestTopicTxSender(outbox.DefaultSender)
 	outboxAsserter := NewOutboxAsserter(t, conn)
 
 	if err := db.Transact(context.Background(), &sqrlx.TxOptions{

@@ -2,6 +2,7 @@ package outbox
 
 import (
 	"context"
+	"database/sql"
 	"net/url"
 
 	"github.com/elgris/sqrl"
@@ -61,4 +62,19 @@ func (ss *Sender) Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Mess
 // transition to typed senders / collectors
 func Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Message) error {
 	return DefaultSender.Send(ctx, tx, msg)
+}
+
+type DirectPublisher struct {
+	Sender
+	db *sqrlx.Wrapper
+}
+
+func (dp *DirectPublisher) Publish(ctx context.Context, msg o5msg.Message) error {
+	return dp.db.Transact(ctx, &sqrlx.TxOptions{
+		Isolation: sql.LevelReadCommitted,
+		ReadOnly:  false,
+		Retryable: true,
+	}, func(ctx context.Context, tx sqrlx.Transaction) error {
+		return dp.Send(ctx, tx, msg)
+	})
 }
