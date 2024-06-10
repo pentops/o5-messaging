@@ -76,16 +76,6 @@ type DirectPublisher struct {
 	db     *sqrlx.Wrapper
 }
 
-func (dp *DirectPublisher) Publish(ctx context.Context, msg o5msg.Message) error {
-	return dp.db.Transact(ctx, &sqrlx.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-		ReadOnly:  false,
-		Retryable: true,
-	}, func(ctx context.Context, tx sqrlx.Transaction) error {
-		return dp.sender.Send(ctx, tx, msg)
-	})
-}
-
 func NewDirectPublisher(conn sqrlx.Connection, sender *Sender) (*DirectPublisher, error) {
 	db, err := sqrlx.New(conn, sqrl.Dollar)
 	if err != nil {
@@ -95,4 +85,18 @@ func NewDirectPublisher(conn sqrlx.Connection, sender *Sender) (*DirectPublisher
 		sender: sender,
 		db:     db,
 	}, nil
+}
+
+func (dp *DirectPublisher) Register(md o5msg.TopicDescriptor) {
+	dp.sender.Register(md)
+}
+
+func (dp *DirectPublisher) Publish(ctx context.Context, msg o5msg.Message) error {
+	return dp.db.Transact(ctx, &sqrlx.TxOptions{
+		Isolation: sql.LevelReadCommitted,
+		ReadOnly:  false,
+		Retryable: true,
+	}, func(ctx context.Context, tx sqrlx.Transaction) error {
+		return dp.sender.Send(ctx, tx, msg)
+	})
 }
