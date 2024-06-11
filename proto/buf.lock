@@ -6,8 +6,3 @@ deps:
     repository: protovalidate
     commit: 46a4cf4ba1094a34bcd89a6c67163b4b
     digest: shake256:436ce453801917c11bc7b21d66bcfae87da2aceb804a041487be1e51dc9fbc219e61ea6a552db7a7aa6d63bb5efd0f3ed5fe3d4c42d4f750d0eb35f14144e3b6
-  - remote: buf.build
-    owner: pentops
-    repository: messaging
-    commit: 675bd3c4763842e0bdef1047f7ab7225
-    digest: shake256:3dc7b4b1091d677d68123e32e134cb6506663166a411ca8a86d7e4d8ee8c85f705326ab507ed4b558f6a8cdb67f66fc78d90cf259b95aa8ace79b0e74820ab5c

@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/pentops/o5-messaging.go/internal/testproto/gen/test/v1/test_tpb"
-	"github.com/pentops/o5-messaging.go/outbox"
+	"github.com/pentops/o5-messaging/internal/testproto/gen/test/v1/test_tpb"
+	"github.com/pentops/o5-messaging/outbox"
 	"github.com/pentops/pgtest.go/pgtest"
 	"github.com/pentops/sqrlx.go/sqrlx"
 )

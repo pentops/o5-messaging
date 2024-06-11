@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/elgris/sqrl"
-	"github.com/pentops/o5-messaging.go/o5msg"
+	"github.com/pentops/o5-messaging/o5msg"
 	"github.com/pentops/sqrlx.go/sqrlx"
 	"google.golang.org/protobuf/encoding/protojson"
 )
