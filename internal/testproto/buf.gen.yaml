@@ -2,10 +2,10 @@ version: v1
 plugins:
   - plugin: buf.build/protocolbuffers/go:v1.31.0
     out: .
-    opt: module=github.com/pentops/o5-messaging.go/internal/testproto
+    opt: module=github.com/pentops/o5-messaging/internal/testproto
 
   - name: go-o5-messaging
     path: ./protoc-gen-go-o5-messaging.sh
     out: .
     opt:
-      - module=github.com/pentops/o5-messaging.go/internal/testproto
+      - module=github.com/pentops/o5-messaging/internal/testproto

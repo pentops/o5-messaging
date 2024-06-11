@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package o5.messaging.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb";
+
+// Message wraps messaging content for the underlying platform routing and
+// delivery.
+message Message {
+  string message_id = 1 [(buf.validate.field).string.uuid = true];
+
+  // The 'full_name' of the gRPC service <package>.<service>
+  string grpc_service = 2 [(buf.validate.field).string = {pattern: "^([a-z0-9_]+\\.)+([A-Z][a-zA-Z0-9_]+)$"}];
+
+  // The short name of the method in the gRPC service
+  string grpc_method = 3 [(buf.validate.field).string = {pattern: "^([A-Za-z0-9_]+)$"}];
+
+  Any body = 4;
+
+  // Then o5.application.name which sent the message
+  string source_app = 5;
+
+  // The o5.environment.full_name which sent the message
+  string source_env = 6;
+
+  // compatibility with named topic messaging, specifies the destination name
+  string destination_topic = 7;
+
+  // Timestamp when producing or replaying the message.
+  google.protobuf.Timestamp timestamp = 8;
+
+  map<string, string> headers = 9;
+
+  oneof extension {
+    Request request = 20;
+    Reply reply = 21;
+  }
+
+  message Request {
+    // In the reply to a request/reply message, Identifies the service or instance
+    // which first sent the request to which the reply should be routed.
+    string reply_to = 1;
+  }
+
+  message Reply {
+    // Copied from the Request's reply_to field when replying.
+    string reply_to = 2;
+  }
+}
+
+// Any is wire-compatible with google.protobuf.Any, but without the parsing and
+// encoding methods, i.e. it leaves proto messages proto bytes
+message Any {
+  string type_url = 1;
+  bytes value = 2;
+  WireEncoding encoding = 3;
+}
+
+// WireEncoding specifies the encoding of the value field in the Any message
+enum WireEncoding {
+  WIRE_ENCODING_UNSPECIFIED = 0; // Protobuf message (default for any)
+  WIRE_ENCODING_PROTOJSON = 1; // ProtoJSON encoded protobuf message
+  WIRE_ENCODING_RAW = 2; // Raw message of any format. Maps to /o5.messaging.v1.topic.RawMessageTopic/Raw
+}

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/pentops/o5-go/messaging/v1/messaging_pb"
-	"github.com/pentops/o5-messaging.go/internal/testproto/gen/test/v1/test_tpb"
-	"github.com/pentops/o5-messaging.go/o5msg"
+	"github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb"
+	"github.com/pentops/o5-messaging/internal/testproto/gen/test/v1/test_tpb"
+	"github.com/pentops/o5-messaging/o5msg"
 	"github.com/stretchr/testify/assert"
 )
 

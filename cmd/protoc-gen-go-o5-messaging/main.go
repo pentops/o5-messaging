@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pentops/o5-messaging.go/internal/protocgen"
+	"github.com/pentops/o5-messaging/internal/protocgen"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
