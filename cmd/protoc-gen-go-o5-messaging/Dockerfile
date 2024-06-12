@@ -1,4 +1,4 @@
-FROM golang:1.20 AS builder
+FROM golang:1.22 AS builder
 
 WORKDIR /src
 
@@ -15,6 +15,6 @@ RUN \
 
 FROM scratch
 LABEL org.opencontainers.image.source = "https://github.com/pentops/o5-messaging"
-COPY --from=builder /protoc-gen-go-sugar /
+COPY --from=builder /protoc-gen-go-o5-messaging /
 ENTRYPOINT ["/protoc-gen-go-o5-messaging"]
 
