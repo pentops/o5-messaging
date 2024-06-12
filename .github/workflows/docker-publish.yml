@@ -1,4 +1,4 @@
-name: Publish Docker image
+name: Publish Docker Image
 
 on: [push]
 
@@ -9,6 +9,10 @@ jobs:
     permissions:
       packages: write
       contents: read
+    strategy:
+      matrix:
+        dockerfile: [./cmd/protoc-gen-go-o5-messaging/Dockerfile]
+        name: [protoc-gen-go-o5-messaging]
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -24,7 +28,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ matrix.name }}
           tags: |
             type=sha,format=long,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
@@ -34,7 +38,7 @@ jobs:
         with:
           context: .
           push: true
-          file: ./cmd/protoc-gen-go-o5-messaging/Dockerfile
+          file: ${{ matrix.dockerfile }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
