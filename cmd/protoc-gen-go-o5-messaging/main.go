@@ -9,13 +9,13 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
-const version = "1.0"
+const Version = "1.0"
 
 func main() {
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 	if *showVersion {
-		fmt.Printf("protoc-gen-go-o5-messaging %v\n", version)
+		fmt.Printf("protoc-gen-go-o5-messaging %v\n", Version)
 		return
 	}
 
