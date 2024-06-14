@@ -1,18 +1,21 @@
-version: v1
+version: v2
 plugins:
-  - plugin: buf.build/protocolbuffers/go:v1.31.0
+  - remote: buf.build/protocolbuffers/go:v1.31.0
     out: .
     opt: paths=import,module=github.com/pentops/o5-messaging
 
-  - name: go-grpc # 'Official' version
+  - local: protoc-gen-go-grpc # 'Official' version
     out: .
     opt: paths=import,module=github.com/pentops/o5-messaging
 
-  - name: go-o5-messaging # github.com/pentops/o5-messaging.go/cmd/protoc-gen-go-o5-messaging
+  - local: protoc-gen-go-o5-messaging # github.com/pentops/o5-messaging/cmd/protoc-gen-go-o5-messaging
     out: .
     opt: paths=import,module=github.com/pentops/o5-messaging
 
-  - name: go-sugar # github.com/pentops/protoc-gen-go-sugar
+  - local: protoc-gen-go-sugar # github.com/pentops/protoc-gen-go-sugar
     out: .
     opt: paths=import,module=github.com/pentops/o5-messaging
 
+
+inputs:
+  - directory: proto
