@@ -1,0 +1,12 @@
+registry:
+  organization: pentops
+  name: messaging
+
+packages:
+  - name: o5.messaging.v1
+
+options:
+  trimSubPackages:
+    - service
+    - topic
+
