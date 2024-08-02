@@ -6,7 +6,7 @@ packages:
   - name: o5.messaging.v1
 
 options:
-  trimSubPackages:
-    - service
-    - topic
+  subPackages:
+    - name: service
+    - name: topic
 
