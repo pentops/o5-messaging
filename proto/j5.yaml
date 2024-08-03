@@ -1,5 +1,5 @@
 registry:
-  organization: pentops
+  owner: pentops
   name: messaging
 
 packages:
@@ -9,4 +9,10 @@ options:
   subPackages:
     - name: service
     - name: topic
+
+dependencies:
+  - bufRegistry:
+      owner: bufbuild
+      name: protovalidate
+
 
