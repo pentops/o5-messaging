@@ -27,7 +27,7 @@ require (
 	github.com/pressly/goose v2.7.0+incompatible // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240805194559-2c9e96a0b5d4 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
