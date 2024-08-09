@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
 	"github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb"
 	"github.com/pentops/o5-messaging/internal/testproto/gen/test/v1/test_tpb"
 	"github.com/pentops/o5-messaging/o5msg"
@@ -97,7 +98,7 @@ func TestCallback(t *testing.T) {
 
 	db := &runner{}
 
-	requestMeta := &messaging_pb.RequestMetadata{
+	requestMeta := &messaging_j5pb.RequestMetadata{
 		ReplyTo: "reply-to",
 		Context: []byte("request-metadata"),
 	}

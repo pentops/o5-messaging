@@ -3,7 +3,7 @@ package protocgen
 import (
 	"fmt"
 
-	"github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb"
+	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -12,9 +12,10 @@ import (
 const Version = "0.0.0"
 
 var (
-	o5MessagePkg = protogen.GoImportPath("github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb")
-	contextPkg   = protogen.GoImportPath("context")
-	o5msgPkg     = protogen.GoImportPath("github.com/pentops/o5-messaging/o5msg")
+	o5MessagePkg        = protogen.GoImportPath("github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb")
+	contextPkg          = protogen.GoImportPath("context")
+	o5msgPkg            = protogen.GoImportPath("github.com/pentops/o5-messaging/o5msg")
+	requestMetadataType = "j5.messaging.v1.RequestMetadata"
 )
 
 type KeyValue struct {
@@ -49,10 +50,10 @@ func (cfg Config) generateFile(gen *protogen.Plugin, file *protogen.File) (*prot
 
 	var g *protogen.GeneratedFile
 	for _, service := range file.Services {
-		opts, _ := proto.GetExtension(service.Desc.Options(), messaging_pb.E_Service).(*messaging_pb.ServiceConfig)
+		opts, _ := proto.GetExtension(service.Desc.Options(), messaging_j5pb.E_Service).(*messaging_j5pb.ServiceConfig)
 		if opts == nil {
 
-			oldAnnotation, _ := proto.GetExtension(service.Desc.Options(), messaging_pb.E_Config).(*messaging_pb.Config)
+			oldAnnotation, _ := proto.GetExtension(service.Desc.Options(), messaging_j5pb.E_Config).(*messaging_j5pb.Config)
 			if oldAnnotation == nil {
 				continue
 			}
@@ -123,31 +124,31 @@ func getOptionalFieldForType(message *protogen.Message, typeName string) (*proto
 	return foundField, nil
 }
 
-func upscale(oldAnnotation *messaging_pb.Config) (*messaging_pb.ServiceConfig, error) {
-	newOpts := &messaging_pb.ServiceConfig{}
+func upscale(oldAnnotation *messaging_j5pb.Config) (*messaging_j5pb.ServiceConfig, error) {
+	newOpts := &messaging_j5pb.ServiceConfig{}
 	switch topicType := oldAnnotation.Type.(type) {
-	case *messaging_pb.Config_Broadcast:
-		newOpts.Role = &messaging_pb.ServiceConfig_Publish_{
-			Publish: &messaging_pb.ServiceConfig_Publish{},
+	case *messaging_j5pb.Config_Broadcast:
+		newOpts.Role = &messaging_j5pb.ServiceConfig_Publish_{
+			Publish: &messaging_j5pb.ServiceConfig_Publish{},
 		}
 		newOpts.TopicName = &topicType.Broadcast.Name
 
-	case *messaging_pb.Config_Unicast:
-		newOpts.Role = &messaging_pb.ServiceConfig_Publish_{
-			Publish: &messaging_pb.ServiceConfig_Publish{},
+	case *messaging_j5pb.Config_Unicast:
+		newOpts.Role = &messaging_j5pb.ServiceConfig_Publish_{
+			Publish: &messaging_j5pb.ServiceConfig_Publish{},
 		}
 		newOpts.TopicName = &topicType.Unicast.Name
 
-	case *messaging_pb.Config_Request:
-		newOpts.Role = &messaging_pb.ServiceConfig_Request_{
-			Request: &messaging_pb.ServiceConfig_Request{},
+	case *messaging_j5pb.Config_Request:
+		newOpts.Role = &messaging_j5pb.ServiceConfig_Request_{
+			Request: &messaging_j5pb.ServiceConfig_Request{},
 		}
 		name := topicType.Request.Name + "_request"
 		newOpts.TopicName = &name
 
-	case *messaging_pb.Config_Reply:
-		newOpts.Role = &messaging_pb.ServiceConfig_Reply_{
-			Reply: &messaging_pb.ServiceConfig_Reply{},
+	case *messaging_j5pb.Config_Reply:
+		newOpts.Role = &messaging_j5pb.ServiceConfig_Reply_{
+			Reply: &messaging_j5pb.ServiceConfig_Reply{},
 		}
 		name := topicType.Reply.Name + "_reply"
 		newOpts.TopicName = &name
@@ -163,7 +164,7 @@ type Method struct {
 	replyToField *protogen.Field
 }
 
-func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protogen.Service, opts *messaging_pb.ServiceConfig) error {
+func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protogen.Service, opts *messaging_j5pb.ServiceConfig) error {
 
 	parsedMethods := make([]Method, 0, len(service.Methods))
 
@@ -171,16 +172,16 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 		mm := Method{Method: method}
 
 		switch topicType := opts.Role.(type) {
-		case *messaging_pb.ServiceConfig_Publish_:
+		case *messaging_j5pb.ServiceConfig_Publish_:
 
-		case *messaging_pb.ServiceConfig_Request_:
-			_, err := getFieldForType(method.Input, "o5.messaging.v1.RequestMetadata")
+		case *messaging_j5pb.ServiceConfig_Request_:
+			_, err := getFieldForType(method.Input, requestMetadataType)
 			if err != nil {
 				return err
 			}
 
-		case *messaging_pb.ServiceConfig_Reply_:
-			requestMetadata, err := getFieldForType(method.Input, "o5.messaging.v1.RequestMetadata")
+		case *messaging_j5pb.ServiceConfig_Reply_:
+			requestMetadata, err := getFieldForType(method.Input, requestMetadataType)
 			if err != nil {
 				return err
 			}
