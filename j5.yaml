@@ -2,6 +2,8 @@
 bundles:
   - name: proto
     dir: proto
+  - name: testproto
+    dir: internal/testproto/proto
 
 generate:
   - name: go
@@ -15,7 +17,17 @@ generate:
       - base: go
       - base: go-sugar
       - base: go-grpc
-      - base: go-messaging
+
+  - name: test
+    inputs:
+      - local: testproto
+    output: .
+    opts:
+      paths: import
+      module: github.com/pentops/o5-messaging
+    plugins:
+      - base: go
+      - base: o5-go-messaging
 
 plugins:
   - name: go
@@ -33,7 +45,7 @@ plugins:
     docker:
       image: ghcr.io/pentops/protoc-gen-go-sugar:19495b5f5ac3fd3964a03031396d83f1bc1341ca
 
-  - name: go-messaging
+  - name: o5-go-messaging
     type: PLUGIN_PROTO
-    docker:
-      image: ghcr.io/pentops/protoc-gen-go-messaging:9f9694311c7c2ad1d88dd6d0d3d5ece61f3c3e2c
+    cmd: bash
+    args: [./internal/testproto/protoc-gen-go-o5-messaging.sh]
