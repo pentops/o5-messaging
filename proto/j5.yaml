@@ -11,8 +11,9 @@ options:
     - name: topic
 
 dependencies:
-  - bufRegistry:
-      owner: bufbuild
-      name: protovalidate
+  - registry:
+      owner: pentops
+      name: j5
+
 
 

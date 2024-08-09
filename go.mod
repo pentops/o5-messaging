@@ -20,9 +20,10 @@ require (
 )
 
 require (
-	github.com/kr/pretty v0.1.0 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
+	github.com/pentops/j5 v0.0.0-20240809205235-0d9578f35b67 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pressly/goose v2.7.0+incompatible // indirect
 	golang.org/x/net v0.27.0 // indirect
