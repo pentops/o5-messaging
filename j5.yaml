@@ -17,6 +17,7 @@ generate:
       - base: go
       - base: go-sugar
       - base: go-grpc
+      - base: o5-go-messaging
 
   - name: test
     inputs:
