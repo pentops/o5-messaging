@@ -5,7 +5,7 @@ go 1.22.3
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240717164558-a6c49f84cc0f.2
 	github.com/google/uuid v1.6.0
-	github.com/pentops/j5 v0.0.0-20240809205235-0d9578f35b67
+	github.com/pentops/j5 v0.0.0-20240810013210-12540c68f639
 	github.com/pentops/pgtest.go v0.0.0-20240806042712-cca5bdfe6542
 	github.com/pentops/sqrlx.go v0.0.0-20240806064322-33adc0ac5bd4
 	github.com/stretchr/testify v1.9.0
