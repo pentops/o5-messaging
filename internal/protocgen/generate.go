@@ -304,8 +304,8 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 		g.P("  collect.collector.Collect(sendContext, msg)")
 		g.P("}")
 		g.P()
-		g.P("func (publish ", publisherName, ") ", method.GoName, "(ctx ", contextPkg.Ident("Context"), ", msg *", method.Input.GoIdent, ") {")
-		g.P("  publish.publisher.Publish(ctx, msg)")
+		g.P("func (publish ", publisherName, ") ", method.GoName, "(ctx ", contextPkg.Ident("Context"), ", msg *", method.Input.GoIdent, ") error {")
+		g.P("  return publish.publisher.Publish(ctx, msg)")
 		g.P("}")
 
 		/*

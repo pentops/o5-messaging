@@ -73,14 +73,10 @@ func Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Message) error {
 
 type DirectPublisher struct {
 	sender *Sender
-	db     *sqrlx.Wrapper
+	db     sqrlx.Transactor
 }
 
-func NewDirectPublisher(conn sqrlx.Connection, sender *Sender) (*DirectPublisher, error) {
-	db, err := sqrlx.New(conn, sqrl.Dollar)
-	if err != nil {
-		return nil, err
-	}
+func NewDirectPublisher(db sqrlx.Transactor, sender *Sender) (*DirectPublisher, error) {
 	return &DirectPublisher{
 		sender: sender,
 		db:     db,
