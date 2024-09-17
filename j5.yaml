@@ -48,5 +48,6 @@ plugins:
 
   - name: o5-go-messaging
     type: PLUGIN_PROTO
-    cmd: bash
-    args: [./internal/testproto/protoc-gen-go-o5-messaging.sh]
+    local:
+      cmd: bash
+      args: [./internal/testproto/protoc-gen-go-o5-messaging.sh]
