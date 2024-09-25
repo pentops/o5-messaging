@@ -12,10 +12,12 @@ import (
 const Version = "0.0.0"
 
 var (
-	o5MessagePkg        = protogen.GoImportPath("github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb")
-	contextPkg          = protogen.GoImportPath("context")
-	o5msgPkg            = protogen.GoImportPath("github.com/pentops/o5-messaging/o5msg")
-	requestMetadataType = "j5.messaging.v1.RequestMetadata"
+	o5MessagePkg         = protogen.GoImportPath("github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb")
+	contextPkg           = protogen.GoImportPath("context")
+	o5msgPkg             = protogen.GoImportPath("github.com/pentops/o5-messaging/o5msg")
+	requestMetadataType  = "j5.messaging.v1.RequestMetadata"
+	j5MessagePkg         = protogen.GoImportPath("github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb")
+	requestMetadataIdent = j5MessagePkg.Ident("RequestMetadata")
 )
 
 type KeyValue struct {
@@ -166,8 +168,22 @@ type Method struct {
 
 func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protogen.Service, opts *messaging_j5pb.ServiceConfig) error {
 
+	g.P("// Service: " + service.GoName)
 	parsedMethods := make([]Method, 0, len(service.Methods))
 
+	exposeRequestMetadata := func(message *protogen.Message, requestMetadata *protogen.Field) {
+		if requestMetadata == nil {
+			return
+		}
+
+		g.P("// Expose Request Metadata")
+		g.P("func (msg *", message.GoIdent, ") SetJ5RequestMetadata(md *", requestMetadataIdent, ") {")
+		g.P("  msg.", requestMetadata.GoName, " = md")
+		g.P("}")
+		g.P("func (msg *", message.GoIdent, ") GetJ5RequestMetadata()  *", requestMetadataIdent, " {")
+		g.P("  return msg.", requestMetadata.GoName)
+		g.P("}")
+	}
 	for _, method := range service.Methods {
 		mm := Method{Method: method}
 
@@ -175,10 +191,12 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 		case *messaging_j5pb.ServiceConfig_Publish_:
 
 		case *messaging_j5pb.ServiceConfig_Request_:
-			_, err := getFieldForType(method.Input, requestMetadataType)
+			requestMetadata, err := getFieldForType(method.Input, requestMetadataType)
 			if err != nil {
 				return err
 			}
+
+			exposeRequestMetadata(method.Input, requestMetadata)
 
 		case *messaging_j5pb.ServiceConfig_Reply_:
 			requestMetadata, err := getFieldForType(method.Input, requestMetadataType)
@@ -187,6 +205,7 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 			}
 
 			mm.replyToField = requestMetadata
+			exposeRequestMetadata(method.Input, requestMetadata)
 
 		default:
 			return fmt.Errorf("unknown / unsupported message role %v", topicType)
@@ -194,8 +213,6 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 
 		parsedMethods = append(parsedMethods, mm)
 	}
-
-	g.P("// Service: " + service.GoName)
 
 	senderName := service.GoName + "TxSender"
 	g.P("type ", senderName, "[C any] struct {")
