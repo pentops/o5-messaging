@@ -1,7 +1,0 @@
----
-
-dependencies:
-  - local: proto
-  - registry:
-      owner: pentops
-      name: j5

@@ -7,7 +7,6 @@ package messaging_tpb
 
 import (
 	context "context"
-
 	o5msg "github.com/pentops/o5-messaging/o5msg"
 )
 
@@ -83,6 +82,6 @@ func (collect DeadMessageTopicCollector[C]) Dead(sendContext C, msg *DeadMessage
 	collect.collector.Collect(sendContext, msg)
 }
 
-func (publish DeadMessageTopicPublisher) Dead(ctx context.Context, msg *DeadMessage) {
-	publish.publisher.Publish(ctx, msg)
+func (publish DeadMessageTopicPublisher) Dead(ctx context.Context, msg *DeadMessage) error {
+	return publish.publisher.Publish(ctx, msg)
 }

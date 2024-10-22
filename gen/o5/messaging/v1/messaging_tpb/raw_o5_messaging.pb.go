@@ -7,7 +7,6 @@ package messaging_tpb
 
 import (
 	context "context"
-
 	o5msg "github.com/pentops/o5-messaging/o5msg"
 )
 
@@ -82,6 +81,6 @@ func (collect RawMessageTopicCollector[C]) Raw(sendContext C, msg *RawMessage) {
 	collect.collector.Collect(sendContext, msg)
 }
 
-func (publish RawMessageTopicPublisher) Raw(ctx context.Context, msg *RawMessage) {
-	publish.publisher.Publish(ctx, msg)
+func (publish RawMessageTopicPublisher) Raw(ctx context.Context, msg *RawMessage) error {
+	return publish.publisher.Publish(ctx, msg)
 }

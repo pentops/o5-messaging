@@ -1,0 +1,4 @@
+---
+
+dependencies:
+  - local: proto

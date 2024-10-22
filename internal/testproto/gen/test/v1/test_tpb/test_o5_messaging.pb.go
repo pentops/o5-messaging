@@ -7,7 +7,7 @@ package test_tpb
 
 import (
 	context "context"
-
+	messaging_j5pb "github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
 	messaging_pb "github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb"
 	o5msg "github.com/pentops/o5-messaging/o5msg"
 )
@@ -83,11 +83,19 @@ func (collect TestTopicCollector[C]) Test(sendContext C, msg *TestMessage) {
 	collect.collector.Collect(sendContext, msg)
 }
 
-func (publish TestTopicPublisher) Test(ctx context.Context, msg *TestMessage) {
-	publish.publisher.Publish(ctx, msg)
+func (publish TestTopicPublisher) Test(ctx context.Context, msg *TestMessage) error {
+	return publish.publisher.Publish(ctx, msg)
 }
 
 // Service: GreetingRequestTopic
+// Expose Request Metadata
+func (msg *GreetingMessage) SetJ5RequestMetadata(md *messaging_j5pb.RequestMetadata) {
+	msg.Request = md
+}
+func (msg *GreetingMessage) GetJ5RequestMetadata() *messaging_j5pb.RequestMetadata {
+	return msg.Request
+}
+
 type GreetingRequestTopicTxSender[C any] struct {
 	sender o5msg.TxSender[C]
 }
@@ -158,11 +166,19 @@ func (collect GreetingRequestTopicCollector[C]) Greeting(sendContext C, msg *Gre
 	collect.collector.Collect(sendContext, msg)
 }
 
-func (publish GreetingRequestTopicPublisher) Greeting(ctx context.Context, msg *GreetingMessage) {
-	publish.publisher.Publish(ctx, msg)
+func (publish GreetingRequestTopicPublisher) Greeting(ctx context.Context, msg *GreetingMessage) error {
+	return publish.publisher.Publish(ctx, msg)
 }
 
 // Service: GreetingResponseTopic
+// Expose Request Metadata
+func (msg *ResponseMessage) SetJ5RequestMetadata(md *messaging_j5pb.RequestMetadata) {
+	msg.Request = md
+}
+func (msg *ResponseMessage) GetJ5RequestMetadata() *messaging_j5pb.RequestMetadata {
+	return msg.Request
+}
+
 type GreetingResponseTopicTxSender[C any] struct {
 	sender o5msg.TxSender[C]
 }
@@ -240,6 +256,6 @@ func (collect GreetingResponseTopicCollector[C]) Response(sendContext C, msg *Re
 	collect.collector.Collect(sendContext, msg)
 }
 
-func (publish GreetingResponseTopicPublisher) Response(ctx context.Context, msg *ResponseMessage) {
-	publish.publisher.Publish(ctx, msg)
+func (publish GreetingResponseTopicPublisher) Response(ctx context.Context, msg *ResponseMessage) error {
+	return publish.publisher.Publish(ctx, msg)
 }

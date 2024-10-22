@@ -10,10 +10,4 @@ options:
     - name: service
     - name: topic
 
-dependencies:
-  - registry:
-      owner: pentops
-      name: j5
-
-
 
