@@ -59,3 +59,23 @@ messaging infrastructure.
 - Exactly one Worker application
 - Exactly one Input Queue
 - Zero or more Sender applications
+
+
+
+# Request Reply Flow
+
+Both the Request and Reply messages contain a field 'request' of type
+`j5.messaging.v1.RequestMetadata`, which has 'context' - a free byte field, and
+'replyTo'.
+
+A replier must set the 'request' field in the reply message to the 'request'
+value in the request message.
+
+The request field is in the application space so that it can be accessed and
+stored by the worker.
+
+The value of replyTo in the initial request is handled by the platform, not the
+application code.
+
+The platform will set the replyTo field in the request to the unique service
+name used in subscriptions.

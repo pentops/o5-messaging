@@ -163,7 +163,8 @@ func upscale(oldAnnotation *messaging_j5pb.Config) (*messaging_j5pb.ServiceConfi
 
 type Method struct {
 	*protogen.Method
-	replyToField *protogen.Field
+	replyReplyToField   *protogen.Field
+	requestReplyToField *protogen.Field
 }
 
 func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protogen.Service, opts *messaging_j5pb.ServiceConfig) error {
@@ -184,6 +185,7 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 		g.P("  return msg.", requestMetadata.GoName)
 		g.P("}")
 	}
+
 	for _, method := range service.Methods {
 		mm := Method{Method: method}
 
@@ -196,6 +198,7 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 				return err
 			}
 
+			mm.requestReplyToField = requestMetadata
 			exposeRequestMetadata(method.Input, requestMetadata)
 
 		case *messaging_j5pb.ServiceConfig_Reply_:
@@ -204,7 +207,7 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 				return err
 			}
 
-			mm.replyToField = requestMetadata
+			mm.replyReplyToField = requestMetadata
 			exposeRequestMetadata(method.Input, requestMetadata)
 
 		default:
@@ -300,15 +303,31 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 			g.P("  DestinationTopic: \"", *opts.TopicName, "\",")
 		}
 		g.P("  }")
-		if method.replyToField != nil {
+		if method.replyReplyToField != nil {
 			g.P("if msg.Request != nil {")
 			g.P("header.Extension = &", o5MessagePkg.Ident("Message_Reply_"), "{")
 			g.P("	Reply: &", o5MessagePkg.Ident("Message_Reply"), "{")
-			g.P("		ReplyTo: msg.", method.replyToField.GoName, ".ReplyTo,")
+			g.P("		ReplyTo: msg.", method.replyReplyToField.GoName, ".ReplyTo,")
 			g.P("	},")
 			g.P("}")
 			g.P("}")
+		} else if method.requestReplyToField != nil {
+			g.P("if msg.Request != nil {")
+			g.P("  header.Extension = &", o5MessagePkg.Ident("Message_Request_"), "{")
+			g.P("    Request: &", o5MessagePkg.Ident("Message_Request"), "{")
+			g.P("      ReplyTo: msg.", method.requestReplyToField.GoName, ".ReplyTo,")
+			g.P("    },")
+			g.P("  }")
+			g.P("} else {")
+			g.P("  header.Extension = &", o5MessagePkg.Ident("Message_Request_"), "{")
+			g.P("    Request: &", o5MessagePkg.Ident("Message_Request"), "{")
+			g.P("      ReplyTo: \"\",")
+			g.P("    },")
+			g.P("  }")
+			g.P("}")
+
 		}
+
 		g.P("  return header")
 		g.P("}")
 		g.P()
