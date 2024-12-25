@@ -146,8 +146,7 @@ func TestCallback(t *testing.T) {
 
 		assert.Equal(t, 0, msgB.txIdx)
 		assert.Equal(t, "test.v1.topic.GreetingRequestTopic", msgB.message.GrpcService)
-		// Request doesn't get an annotation
-		assert.Nil(t, msgB.message.Extension)
+		assert.Equal(t, "reply-to", msgB.message.Extension.(*messaging_pb.Message_Request_).Request.ReplyTo)
 
 		assert.Equal(t, 1, msgC.txIdx)
 		assert.Equal(t, "test.v1.topic.TestTopic", msgC.message.GrpcService)
