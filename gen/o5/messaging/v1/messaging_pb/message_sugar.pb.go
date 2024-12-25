@@ -14,6 +14,7 @@ const (
 	WireEncoding_UNSPECIFIED WireEncoding = 0
 	WireEncoding_PROTOJSON   WireEncoding = 1
 	WireEncoding_RAW         WireEncoding = 2
+	WireEncoding_J5_JSON     WireEncoding = 3
 )
 
 var (
@@ -21,11 +22,13 @@ var (
 		0: "UNSPECIFIED",
 		1: "PROTOJSON",
 		2: "RAW",
+		3: "J5_JSON",
 	}
 	WireEncoding_value_short = map[string]int32{
 		"UNSPECIFIED": 0,
 		"PROTOJSON":   1,
 		"RAW":         2,
+		"J5_JSON":     3,
 	}
 	WireEncoding_value_either = map[string]int32{
 		"UNSPECIFIED":               0,
@@ -34,6 +37,8 @@ var (
 		"WIRE_ENCODING_PROTOJSON":   1,
 		"RAW":                       2,
 		"WIRE_ENCODING_RAW":         2,
+		"J5_JSON":                   3,
+		"WIRE_ENCODING_J5_JSON":     3,
 	}
 )
 

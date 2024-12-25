@@ -155,6 +155,19 @@ func (msg *GreetingMessage) O5MessageHeader() o5msg.Header {
 		GrpcMethod:  "Greeting",
 		Headers:     map[string]string{},
 	}
+	if msg.Request != nil {
+		header.Extension = &messaging_pb.Message_Request_{
+			Request: &messaging_pb.Message_Request{
+				ReplyTo: msg.Request.ReplyTo,
+			},
+		}
+	} else {
+		header.Extension = &messaging_pb.Message_Request_{
+			Request: &messaging_pb.Message_Request{
+				ReplyTo: "",
+			},
+		}
+	}
 	return header
 }
 

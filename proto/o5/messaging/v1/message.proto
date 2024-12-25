@@ -65,4 +65,5 @@ enum WireEncoding {
   WIRE_ENCODING_UNSPECIFIED = 0; // Protobuf message (default for any)
   WIRE_ENCODING_PROTOJSON = 1; // ProtoJSON encoded protobuf message
   WIRE_ENCODING_RAW = 2; // Raw message of any format. Maps to /o5.messaging.v1.topic.RawMessageTopic/Raw
+  WIRE_ENCODING_J5_JSON = 3; // J5_JSON encoded protobuf message
 }
