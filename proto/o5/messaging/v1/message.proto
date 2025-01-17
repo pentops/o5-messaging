@@ -11,7 +11,7 @@ option go_package = "github.com/pentops/o5-messaging/gen/o5/messaging/v1/messagi
 // Message wraps messaging content for the underlying platform routing and
 // delivery.
 message Message {
-  string message_id = 1 [(buf.validate.field).string.uuid = true];
+  string message_id = 1;
 
   // The 'full_name' of the gRPC service <package>.<service>
   string grpc_service = 2 [(buf.validate.field).string = {pattern: "^([a-z0-9_]+\\.)+([A-Z][a-zA-Z0-9_]+)$"}];
