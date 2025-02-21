@@ -62,8 +62,7 @@ func MessageBodyMatches[T proto.Message](filter func(T) bool) condition {
 
 			err := protojson.Unmarshal(wrapper.Body.Value, body)
 			if err != nil {
-				fmt.Printf("error unmarshalling body: %v\n", err)
-				return false, err
+				return false, fmt.Errorf("error unmarshalling body: %w", err)
 			}
 
 			return filter(body), nil
