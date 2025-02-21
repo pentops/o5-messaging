@@ -171,6 +171,11 @@ func (oa *OutboxAsserter) ForEachMessage(tb TB, fn func(*messaging_pb.Message)) 
 			fn(wrapper)
 		}
 
+		err = rows.Err()
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -228,7 +233,11 @@ func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions quer
 			}
 
 			bodies = append(bodies, msgBody)
+		}
 
+		err = rows.Err()
+		if err != nil {
+			return err
 		}
 
 		return nil
