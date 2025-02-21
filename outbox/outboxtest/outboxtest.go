@@ -31,6 +31,7 @@ func NewOutboxAsserter(t TB, conn sqrlx.Connection) *OutboxAsserter {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+
 	return &OutboxAsserter{
 		db:     db,
 		Config: outbox.DefaultConfig,
@@ -48,6 +49,7 @@ func getContext(t TB) context.Context {
 	if ctx, ok := t.(interface{ Context() context.Context }); ok {
 		return ctx.Context()
 	}
+
 	return context.Background()
 }
 
@@ -59,6 +61,7 @@ func MessageBodyMatches[T proto.Message](filter func(T) bool) condition {
 				fmt.Printf("error unmarshalling body: %v\n", err)
 				return false, err
 			}
+
 			return filter(body), nil
 		})
 	}
@@ -105,6 +108,7 @@ func (oa *OutboxAsserter) AssertEmpty(tb TB) {
 	}); err != nil {
 		tb.Fatal(err)
 	}
+
 	if count > 0 {
 		tb.Fatalf("expected outbox to be empty, but found %d messages", count)
 	}
@@ -173,7 +177,6 @@ func messageTypeFilter(typeURL string) filter {
 var multiMatchError = errors.New("multiple messages matched")
 
 func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions queryConditions) (*messaging_pb.Message, error) {
-
 	query := sq.Select(oa.DataColumn).
 		From(oa.TableName).
 		OrderBy(oa.IDColumn)
@@ -204,6 +207,7 @@ func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions quer
 			bodies = append(bodies, msgBody)
 
 		}
+
 		return nil
 	}); err != nil {
 		return nil, err
