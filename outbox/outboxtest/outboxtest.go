@@ -46,7 +46,9 @@ var txOptions = &sqrlx.TxOptions{
 
 func getContext(t TB) context.Context {
 	t.Helper()
-	if ctx, ok := t.(interface{ Context() context.Context }); ok {
+
+	ctx, ok := t.(interface{ Context() context.Context })
+	if ok {
 		return ctx.Context()
 	}
 
@@ -57,7 +59,9 @@ func MessageBodyMatches[T proto.Message](filter func(T) bool) condition {
 	return func(conditions *queryConditions) {
 		conditions.checkers = append(conditions.checkers, func(wrapper *messaging_pb.Message) (bool, error) {
 			body := (*new(T)).ProtoReflect().New().Interface().(T)
-			if err := protojson.Unmarshal(wrapper.Body.Value, body); err != nil {
+
+			err := protojson.Unmarshal(wrapper.Body.Value, body)
+			if err != nil {
 				fmt.Printf("error unmarshalling body: %v\n", err)
 				return false, err
 			}
@@ -94,18 +98,28 @@ func (oa *OutboxAsserter) PopMessage(tb TB, msg proto.Message, conditions ...con
 		tb.Fatal(err)
 	}
 
-	if err := protojson.Unmarshal(wrapper.Body.Value, msg); err != nil {
+	err = protojson.Unmarshal(wrapper.Body.Value, msg)
+	if err != nil {
 		tb.Fatal(err)
 	}
 }
 
 func (oa *OutboxAsserter) AssertEmpty(tb TB) {
 	tb.Helper()
+
+	q := sq.Select("COUNT(*)").
+		From(oa.TableName)
+
 	var count int
-	if err := oa.db.Transact(getContext(tb), txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
-		return tx.SelectRow(ctx, sq.Select("COUNT(*)").
-			From(oa.TableName)).Scan(&count)
-	}); err != nil {
+	err := oa.db.Transact(getContext(tb), txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
+		err := tx.SelectRow(ctx, q).Scan(&count)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
 		tb.Fatal(err)
 	}
 
@@ -117,10 +131,15 @@ func (oa *OutboxAsserter) AssertEmpty(tb TB) {
 func (oa *OutboxAsserter) PurgeAll(tb TB) {
 	tb.Helper()
 
-	if err := oa.db.Transact(getContext(tb), txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
+	err := oa.db.Transact(getContext(tb), txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
 		_, err := tx.Exec(ctx, sq.Delete(oa.TableName))
-		return err
-	}); err != nil {
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
 		tb.Fatal(err)
 	}
 }
@@ -128,9 +147,11 @@ func (oa *OutboxAsserter) PurgeAll(tb TB) {
 func (oa *OutboxAsserter) ForEachMessage(tb TB, fn func(*messaging_pb.Message)) {
 	tb.Helper()
 
-	if err := oa.db.Transact(getContext(tb), txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
-		rows, err := tx.Query(ctx, sq.Select(oa.DataColumn).
-			From(oa.TableName))
+	q := sq.Select(oa.DataColumn).
+		From(oa.TableName)
+
+	err := oa.db.Transact(getContext(tb), txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
+		rows, err := tx.Query(ctx, q)
 		if err != nil {
 			return err
 		}
@@ -143,7 +164,8 @@ func (oa *OutboxAsserter) ForEachMessage(tb TB, fn func(*messaging_pb.Message)) 
 			}
 
 			wrapper := &messaging_pb.Message{}
-			if err := protojson.Unmarshal(msgBody, wrapper); err != nil {
+			err := protojson.Unmarshal(msgBody, wrapper)
+			if err != nil {
 				return err
 			}
 
@@ -151,7 +173,8 @@ func (oa *OutboxAsserter) ForEachMessage(tb TB, fn func(*messaging_pb.Message)) 
 		}
 
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		tb.Fatal(err)
 	}
 }
@@ -187,7 +210,7 @@ func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions quer
 
 	bodies := make([][]byte, 0, 1)
 
-	if err := oa.db.Transact(ctx, txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
+	err := oa.db.Transact(ctx, txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
 		tb.Helper()
 
 		var msgBody []byte
@@ -200,7 +223,8 @@ func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions quer
 		defer rows.Close()
 
 		for rows.Next() {
-			if err := rows.Scan(&msgBody); err != nil {
+			err := rows.Scan(&msgBody)
+			if err != nil {
 				return err
 			}
 
@@ -209,7 +233,8 @@ func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions quer
 		}
 
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -243,16 +268,21 @@ bodies:
 	}
 
 	msgID := matchedMessages[0].MessageId
-	if err := oa.db.Transact(ctx, txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
+
+	q := sq.Delete(oa.TableName).
+		Where(sq.Eq{oa.IDColumn: msgID})
+
+	err = oa.db.Transact(ctx, txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
 		tb.Helper()
 
-		if _, err := tx.Delete(ctx, sq.Delete(oa.TableName).
-			Where(sq.Eq{oa.IDColumn: msgID})); err != nil {
+		_, err := tx.Delete(ctx, q)
+		if err != nil {
 			return err
 		}
 
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 
