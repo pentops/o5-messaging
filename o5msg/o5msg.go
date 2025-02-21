@@ -111,6 +111,7 @@ func WrapMessage(msg Message) (*messaging_pb.Message, error) {
 			Value:    bodyData,
 			Encoding: messaging_pb.WireEncoding_PROTOJSON,
 		},
+		DelaySeconds:     0,
 		DestinationTopic: header.DestinationTopic,
 		Headers:          header.Headers,
 		Extension:        header.Extension,
