@@ -35,6 +35,10 @@ message Message {
 
   map<string, string> headers = 9;
 
+  // Delay in seconds before the message should be delivered, with a maximum of
+  // 15 mins.
+  int32 delay_seconds = 10 [(buf.validate.field).int32 = {gte: 0, lte: 900}];
+
   oneof extension {
     Request request = 20;
     Reply reply = 21;
