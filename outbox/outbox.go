@@ -53,8 +53,6 @@ func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, msg o5m
 		return err
 	}
 
-	wrapper.DelaySeconds = int32(delay)
-
 	msgBytes, err := protojson.Marshal(wrapper)
 	if err != nil {
 		return err
