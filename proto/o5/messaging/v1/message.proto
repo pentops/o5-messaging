@@ -27,7 +27,7 @@ message Message {
   // The o5.environment.full_name which sent the message
   string source_env = 6;
 
-  // compatibility with named topic messaging, specifies the destination name
+  // Deprecated. For compatibility with named topic messaging, specifies the destination name
   string destination_topic = 7;
 
   // Timestamp when producing or replaying the message.
@@ -37,11 +37,16 @@ message Message {
 
   // Delay in seconds before the message should be delivered, with a maximum of
   // 15 mins.
-  int32 delay_seconds = 10 [(buf.validate.field).int32 = {gte: 0, lte: 900}];
+  int32 delay_seconds = 10 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 900
+  }];
 
   oneof extension {
     Request request = 20;
     Reply reply = 21;
+    Event event = 22;
+    Upsert upsert = 23;
   }
 
   message Request {
@@ -53,6 +58,16 @@ message Message {
   message Reply {
     // Copied from the Request's reply_to field when replying.
     string reply_to = 2;
+  }
+
+  message Event {
+    // full name of the state machine publishing the event, as package.v1.name
+    string entity_name = 1;
+  }
+
+  message Upsert {
+    // full name of the state machine causing the upsert, as package.v1.name
+    string entity_name = 1;
   }
 }
 

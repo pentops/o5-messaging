@@ -1,11 +1,13 @@
 module github.com/pentops/o5-messaging
 
-go 1.22.4
+go 1.23.2
+
+toolchain go1.23.5
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.35.1-20240920164238-5a7b106cbb87.1
 	github.com/google/uuid v1.6.0
-	github.com/pentops/j5 v0.0.0-20241022210403-7bf86c63d6e6
+	github.com/pentops/j5 v0.0.0-20250317180733-306c101af1ec
 	github.com/pentops/pgtest.go v0.0.0-20240806042712-cca5bdfe6542
 	github.com/pentops/sqrlx.go v0.0.0-20240806064322-33adc0ac5bd4
 	github.com/stretchr/testify v1.9.0
@@ -25,6 +27,7 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pressly/goose v2.7.0+incompatible // indirect
+	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect

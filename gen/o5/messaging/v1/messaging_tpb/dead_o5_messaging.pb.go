@@ -11,6 +11,18 @@ import (
 )
 
 // Service: DeadMessageTopic
+// Method: Dead
+
+func (msg *DeadMessage) O5MessageHeader() o5msg.Header {
+	header := o5msg.Header{
+		GrpcService:      "o5.messaging.v1.topic.DeadMessageTopic",
+		GrpcMethod:       "Dead",
+		Headers:          map[string]string{},
+		DestinationTopic: "dead-letter",
+	}
+	return header
+}
+
 type DeadMessageTopicTxSender[C any] struct {
 	sender o5msg.TxSender[C]
 }
@@ -63,16 +75,6 @@ func NewDeadMessageTopicPublisher(publisher o5msg.Publisher) *DeadMessageTopicPu
 }
 
 // Method: Dead
-
-func (msg *DeadMessage) O5MessageHeader() o5msg.Header {
-	header := o5msg.Header{
-		GrpcService:      "o5.messaging.v1.topic.DeadMessageTopic",
-		GrpcMethod:       "Dead",
-		Headers:          map[string]string{},
-		DestinationTopic: "dead-letter",
-	}
-	return header
-}
 
 func (send DeadMessageTopicTxSender[C]) Dead(ctx context.Context, sendContext C, msg *DeadMessage) error {
 	return send.sender.Send(ctx, sendContext, msg)

@@ -13,6 +13,17 @@ import (
 )
 
 // Service: TestTopic
+// Method: Test
+
+func (msg *TestMessage) O5MessageHeader() o5msg.Header {
+	header := o5msg.Header{
+		GrpcService: "test.v1.topic.TestTopic",
+		GrpcMethod:  "Test",
+		Headers:     map[string]string{},
+	}
+	return header
+}
+
 type TestTopicTxSender[C any] struct {
 	sender o5msg.TxSender[C]
 }
@@ -66,15 +77,6 @@ func NewTestTopicPublisher(publisher o5msg.Publisher) *TestTopicPublisher {
 
 // Method: Test
 
-func (msg *TestMessage) O5MessageHeader() o5msg.Header {
-	header := o5msg.Header{
-		GrpcService: "test.v1.topic.TestTopic",
-		GrpcMethod:  "Test",
-		Headers:     map[string]string{},
-	}
-	return header
-}
-
 func (send TestTopicTxSender[C]) Test(ctx context.Context, sendContext C, msg *TestMessage) error {
 	return send.sender.Send(ctx, sendContext, msg)
 }
@@ -94,6 +96,30 @@ func (msg *GreetingMessage) SetJ5RequestMetadata(md *messaging_j5pb.RequestMetad
 }
 func (msg *GreetingMessage) GetJ5RequestMetadata() *messaging_j5pb.RequestMetadata {
 	return msg.Request
+}
+
+// Method: Greeting
+
+func (msg *GreetingMessage) O5MessageHeader() o5msg.Header {
+	header := o5msg.Header{
+		GrpcService: "test.v1.topic.GreetingRequestTopic",
+		GrpcMethod:  "Greeting",
+		Headers:     map[string]string{},
+	}
+	if msg.Request != nil {
+		header.Extension = &messaging_pb.Message_Request_{
+			Request: &messaging_pb.Message_Request{
+				ReplyTo: msg.Request.ReplyTo,
+			},
+		}
+	} else {
+		header.Extension = &messaging_pb.Message_Request_{
+			Request: &messaging_pb.Message_Request{
+				ReplyTo: "",
+			},
+		}
+	}
+	return header
 }
 
 type GreetingRequestTopicTxSender[C any] struct {
@@ -149,28 +175,6 @@ func NewGreetingRequestTopicPublisher(publisher o5msg.Publisher) *GreetingReques
 
 // Method: Greeting
 
-func (msg *GreetingMessage) O5MessageHeader() o5msg.Header {
-	header := o5msg.Header{
-		GrpcService: "test.v1.topic.GreetingRequestTopic",
-		GrpcMethod:  "Greeting",
-		Headers:     map[string]string{},
-	}
-	if msg.Request != nil {
-		header.Extension = &messaging_pb.Message_Request_{
-			Request: &messaging_pb.Message_Request{
-				ReplyTo: msg.Request.ReplyTo,
-			},
-		}
-	} else {
-		header.Extension = &messaging_pb.Message_Request_{
-			Request: &messaging_pb.Message_Request{
-				ReplyTo: "",
-			},
-		}
-	}
-	return header
-}
-
 func (send GreetingRequestTopicTxSender[C]) Greeting(ctx context.Context, sendContext C, msg *GreetingMessage) error {
 	return send.sender.Send(ctx, sendContext, msg)
 }
@@ -190,6 +194,24 @@ func (msg *ResponseMessage) SetJ5RequestMetadata(md *messaging_j5pb.RequestMetad
 }
 func (msg *ResponseMessage) GetJ5RequestMetadata() *messaging_j5pb.RequestMetadata {
 	return msg.Request
+}
+
+// Method: Response
+
+func (msg *ResponseMessage) O5MessageHeader() o5msg.Header {
+	header := o5msg.Header{
+		GrpcService: "test.v1.topic.GreetingResponseTopic",
+		GrpcMethod:  "Response",
+		Headers:     map[string]string{},
+	}
+	if msg.Request != nil {
+		header.Extension = &messaging_pb.Message_Reply_{
+			Reply: &messaging_pb.Message_Reply{
+				ReplyTo: msg.Request.ReplyTo,
+			},
+		}
+	}
+	return header
 }
 
 type GreetingResponseTopicTxSender[C any] struct {
@@ -244,22 +266,6 @@ func NewGreetingResponseTopicPublisher(publisher o5msg.Publisher) *GreetingRespo
 }
 
 // Method: Response
-
-func (msg *ResponseMessage) O5MessageHeader() o5msg.Header {
-	header := o5msg.Header{
-		GrpcService: "test.v1.topic.GreetingResponseTopic",
-		GrpcMethod:  "Response",
-		Headers:     map[string]string{},
-	}
-	if msg.Request != nil {
-		header.Extension = &messaging_pb.Message_Reply_{
-			Reply: &messaging_pb.Message_Reply{
-				ReplyTo: msg.Request.ReplyTo,
-			},
-		}
-	}
-	return header
-}
 
 func (send GreetingResponseTopicTxSender[C]) Response(ctx context.Context, sendContext C, msg *ResponseMessage) error {
 	return send.sender.Send(ctx, sendContext, msg)

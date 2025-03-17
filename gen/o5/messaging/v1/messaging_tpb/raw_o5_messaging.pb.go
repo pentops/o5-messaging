@@ -11,6 +11,17 @@ import (
 )
 
 // Service: RawMessageTopic
+// Method: Raw
+
+func (msg *RawMessage) O5MessageHeader() o5msg.Header {
+	header := o5msg.Header{
+		GrpcService: "o5.messaging.v1.topic.RawMessageTopic",
+		GrpcMethod:  "Raw",
+		Headers:     map[string]string{},
+	}
+	return header
+}
+
 type RawMessageTopicTxSender[C any] struct {
 	sender o5msg.TxSender[C]
 }
@@ -63,15 +74,6 @@ func NewRawMessageTopicPublisher(publisher o5msg.Publisher) *RawMessageTopicPubl
 }
 
 // Method: Raw
-
-func (msg *RawMessage) O5MessageHeader() o5msg.Header {
-	header := o5msg.Header{
-		GrpcService: "o5.messaging.v1.topic.RawMessageTopic",
-		GrpcMethod:  "Raw",
-		Headers:     map[string]string{},
-	}
-	return header
-}
 
 func (send RawMessageTopicTxSender[C]) Raw(ctx context.Context, sendContext C, msg *RawMessage) error {
 	return send.sender.Send(ctx, sendContext, msg)
