@@ -154,6 +154,7 @@ func upscale(oldAnnotation *messaging_j5pb.Config) (*messaging_j5pb.ServiceConfi
 		}
 		name := topicType.Reply.Name + "_reply"
 		newOpts.TopicName = &name
+
 	default:
 		return nil, fmt.Errorf("unknown / unsupported topic type %v", topicType)
 	}
@@ -163,8 +164,11 @@ func upscale(oldAnnotation *messaging_j5pb.Config) (*messaging_j5pb.ServiceConfi
 
 type Method struct {
 	*protogen.Method
-	replyReplyToField   *protogen.Field
-	requestReplyToField *protogen.Field
+	headerExtensions []func(g *protogen.GeneratedFile)
+}
+
+func (m *Method) extendHeader(ext func(g *protogen.GeneratedFile)) {
+	m.headerExtensions = append(m.headerExtensions, ext)
 }
 
 func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protogen.Service, opts *messaging_j5pb.ServiceConfig) error {
@@ -198,7 +202,22 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 				return err
 			}
 
-			mm.requestReplyToField = requestMetadata
+			mm.extendHeader(func(g *protogen.GeneratedFile) {
+				g.P("if msg.Request != nil {")
+				g.P("  header.Extension = &", o5MessagePkg.Ident("Message_Request_"), "{")
+				g.P("    Request: &", o5MessagePkg.Ident("Message_Request"), "{")
+				g.P("      ReplyTo: msg.", requestMetadata.GoName, ".ReplyTo,")
+				g.P("    },")
+				g.P("  }")
+				g.P("} else {")
+				g.P("  header.Extension = &", o5MessagePkg.Ident("Message_Request_"), "{")
+				g.P("    Request: &", o5MessagePkg.Ident("Message_Request"), "{")
+				g.P("      ReplyTo: \"\",")
+				g.P("    },")
+				g.P("  }")
+				g.P("}")
+
+			})
 			exposeRequestMetadata(method.Input, requestMetadata)
 
 		case *messaging_j5pb.ServiceConfig_Reply_:
@@ -207,14 +226,70 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 				return err
 			}
 
-			mm.replyReplyToField = requestMetadata
+			mm.extendHeader(func(g *protogen.GeneratedFile) {
+				g.P("if msg.Request != nil {")
+				g.P("header.Extension = &", o5MessagePkg.Ident("Message_Reply_"), "{")
+				g.P("	Reply: &", o5MessagePkg.Ident("Message_Reply"), "{")
+				g.P("		ReplyTo: msg.", requestMetadata.GoName, ".ReplyTo,")
+				g.P("	},")
+				g.P("}")
+				g.P("}")
+			})
 			exposeRequestMetadata(method.Input, requestMetadata)
+
+		case *messaging_j5pb.ServiceConfig_Event_:
+			mm.extendHeader(func(g *protogen.GeneratedFile) {
+				g.P("header.Extension = &", o5MessagePkg.Ident("Message_Event_"), "{")
+				g.P("	Event: &", o5MessagePkg.Ident("Message_Event"), "{")
+				g.P("	EntityName: \"", topicType.Event.EntityName, "\",")
+				g.P("	},")
+				g.P("}")
+			})
+
+		case *messaging_j5pb.ServiceConfig_Upsert_:
+			mm.extendHeader(func(g *protogen.GeneratedFile) {
+				g.P("header.Extension = &", o5MessagePkg.Ident("Message_Upsert_"), "{")
+				g.P("	Upsert: &", o5MessagePkg.Ident("Message_Upsert"), "{")
+				g.P("	EntityName: \"", topicType.Upsert.EntityName, "\",")
+				g.P("	},")
+				g.P("}")
+			})
 
 		default:
 			return fmt.Errorf("unknown / unsupported message role %v", topicType)
 		}
 
 		parsedMethods = append(parsedMethods, mm)
+	}
+
+	for _, method := range parsedMethods {
+		g.P("// Method: " + method.GoName)
+		g.P("")
+		g.P("func (msg *", method.Input.GoIdent, ") O5MessageHeader() ", o5msgPkg.Ident("Header"), " {")
+		g.P("  header := ", o5msgPkg.Ident("Header"), "{")
+		g.P("    GrpcService: \"", service.Desc.FullName(), "\",")
+		g.P("    GrpcMethod: \"", method.Desc.Name(), "\",")
+		g.P("    Headers: map[string]string{")
+		for _, header := range cfg.ExtraHeaders {
+			codeLine := append([]interface{}{`"`, header.Key, `": `}, header.Code...)
+			codeLine = append(codeLine, ",")
+			g.P(codeLine...)
+		}
+
+		g.P("    },")
+
+		if opts.TopicName != nil {
+			g.P("  DestinationTopic: \"", *opts.TopicName, "\",")
+		}
+		g.P("  }")
+
+		for _, ext := range method.headerExtensions {
+			ext(g)
+		}
+
+		g.P("  return header")
+		g.P("}")
+		g.P()
 	}
 
 	senderName := service.GoName + "TxSender"
@@ -286,52 +361,6 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 	for _, method := range parsedMethods {
 		g.P("// Method: " + method.GoName)
 		g.P("")
-		g.P("func (msg *", method.Input.GoIdent, ") O5MessageHeader() ", o5msgPkg.Ident("Header"), " {")
-		g.P("  header := ", o5msgPkg.Ident("Header"), "{")
-		g.P("    GrpcService: \"", service.Desc.FullName(), "\",")
-		g.P("    GrpcMethod: \"", method.Desc.Name(), "\",")
-		g.P("    Headers: map[string]string{")
-		for _, header := range cfg.ExtraHeaders {
-			codeLine := append([]interface{}{`"`, header.Key, `": `}, header.Code...)
-			codeLine = append(codeLine, ",")
-			g.P(codeLine...)
-		}
-
-		g.P("    },")
-
-		if opts.TopicName != nil {
-			g.P("  DestinationTopic: \"", *opts.TopicName, "\",")
-		}
-		g.P("  }")
-		if method.replyReplyToField != nil {
-			g.P("if msg.Request != nil {")
-			g.P("header.Extension = &", o5MessagePkg.Ident("Message_Reply_"), "{")
-			g.P("	Reply: &", o5MessagePkg.Ident("Message_Reply"), "{")
-			g.P("		ReplyTo: msg.", method.replyReplyToField.GoName, ".ReplyTo,")
-			g.P("	},")
-			g.P("}")
-			g.P("}")
-		} else if method.requestReplyToField != nil {
-			g.P("if msg.Request != nil {")
-			g.P("  header.Extension = &", o5MessagePkg.Ident("Message_Request_"), "{")
-			g.P("    Request: &", o5MessagePkg.Ident("Message_Request"), "{")
-			g.P("      ReplyTo: msg.", method.requestReplyToField.GoName, ".ReplyTo,")
-			g.P("    },")
-			g.P("  }")
-			g.P("} else {")
-			g.P("  header.Extension = &", o5MessagePkg.Ident("Message_Request_"), "{")
-			g.P("    Request: &", o5MessagePkg.Ident("Message_Request"), "{")
-			g.P("      ReplyTo: \"\",")
-			g.P("    },")
-			g.P("  }")
-			g.P("}")
-
-		}
-
-		g.P("  return header")
-		g.P("}")
-		g.P()
-
 		g.P("func (send ", senderName, "[C]) ", method.GoName, "(ctx ", contextPkg.Ident("Context"), ", sendContext C, msg *", method.Input.GoIdent, ") error {")
 		g.P("  return send.sender.Send(ctx, sendContext, msg)")
 		g.P("}")
@@ -343,24 +372,6 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 		g.P("func (publish ", publisherName, ") ", method.GoName, "(ctx ", contextPkg.Ident("Context"), ", msg *", method.Input.GoIdent, ") error {")
 		g.P("  return publish.publisher.Publish(ctx, msg)")
 		g.P("}")
-
-		/*
-			upsertField, err := getOptionalFieldForType(method.Input, "messaging.v1.UpsertMetadata")
-			if err != nil {
-				return err
-			}
-			if upsertField != nil {
-				g.P(`if msg.`, upsertField.GoName, ` != nil {`)
-				g.P(`headers["o5-upsert-entity-id"] = msg.`, upsertField.GoName, `.EntityId`)
-				// cheating with RFC3339 string so we don't have to import time package in the generated code.
-				g.P(`headers["o5-upsert-entity-timestamp"] = msg.`, upsertField.GoName, `.Timestamp.AsTime().Format("`, time.RFC3339, `")`)
-				g.P(`}`)
-			}
-
-			g.P("return headers")
-			g.P("}")
-			g.P("")
-		*/
 	}
 	return nil
 }

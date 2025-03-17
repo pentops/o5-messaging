@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package o5.messaging.v1.topic;
+
+import "google/protobuf/empty.proto";
+import "j5/messaging/v1/annotations.proto";
+import "o5/messaging/v1/message.proto";
+
+option go_package = "github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_tpb";
+
+// GenericMessage allows subscribers to receive the full message with metadata.
+service GenericMessageTopic {
+  option (j5.messaging.v1.service).publish = {};
+  rpc Generic(GenericMessage) returns (google.protobuf.Empty) {}
+}
+
+message GenericMessage {
+  o5.messaging.v1.Message message = 1;
+}
