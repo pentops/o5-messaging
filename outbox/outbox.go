@@ -44,10 +44,10 @@ func NewSender(config Config) *Sender {
 
 // Send places the message in the outbox table.
 func (ss *Sender) Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Message) error {
-	return ss.SendDelayed(ctx, tx, msg, 0)
+	return ss.SendDelayed(ctx, tx, 0, msg)
 }
 
-func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Message, delay int) error {
+func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, approximateDelay time.Duration, msg o5msg.Message) error {
 	wrapper, err := o5msg.WrapMessage(msg)
 	if err != nil {
 		return err
