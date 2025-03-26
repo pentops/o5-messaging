@@ -3,6 +3,7 @@ package outbox
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"net/url"
 	"time"
 
@@ -28,6 +29,8 @@ var DefaultConfig = Config{
 	SendAfter:     "send_after",
 }
 
+var ErrMaxDelayExceeded = errors.New("maximum delay exceeded")
+
 var DefaultSender *Sender = &Sender{
 	Config:   DefaultConfig,
 	TopicSet: o5msg.TopicSet{},
@@ -51,6 +54,10 @@ func (ss *Sender) Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Mess
 }
 
 func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, approximateDelay time.Duration, msg o5msg.Message) error {
+	if approximateDelay > 15*time.Minute {
+		return ErrMaxDelayExceeded
+	}
+
 	wrapper, err := o5msg.WrapMessage(msg)
 	if err != nil {
 		return err
