@@ -53,6 +53,8 @@ func (ss *Sender) Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Mess
 	return ss.SendDelayed(ctx, tx, 0, msg)
 }
 
+// SendDelayed places the message in the outbox table to be sent at approximately
+// the current time plus the delay. The delay must be less than 15 minutes.
 func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, approximateDelay time.Duration, msg o5msg.Message) error {
 	if approximateDelay > 15*time.Minute {
 		return ErrMaxDelayExceeded
