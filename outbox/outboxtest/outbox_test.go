@@ -11,6 +11,12 @@ import (
 	"github.com/pentops/sqrlx.go/sqrlx"
 )
 
+var mutableTxOptions = &sqrlx.TxOptions{
+	Isolation: sql.LevelReadCommitted,
+	ReadOnly:  false,
+	Retryable: true,
+}
+
 func TestOutboxSend(t *testing.T) {
 	ctx := context.Background()
 
@@ -34,11 +40,7 @@ func TestOutboxSend(t *testing.T) {
 	testSender := test_tpb.NewTestTopicTxSender(outbox.DefaultSender)
 	outboxAsserter := NewOutboxAsserter(t, conn)
 
-	if err := db.Transact(context.Background(), &sqrlx.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-		ReadOnly:  false,
-		Retryable: true,
-	}, func(ctx context.Context, tx sqrlx.Transaction) error {
+	if err := db.Transact(context.Background(), mutableTxOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
 		return testSender.Test(ctx, tx, &test_tpb.TestMessage{
 			Message: "Hello, World!",
 		})
