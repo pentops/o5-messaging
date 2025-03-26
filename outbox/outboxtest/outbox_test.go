@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	"github.com/pentops/o5-messaging/internal/testproto/gen/test/v1/test_tpb"
 	"github.com/pentops/o5-messaging/outbox"
@@ -45,6 +46,46 @@ func TestOutboxSend(t *testing.T) {
 			Message: "Hello, World!",
 		})
 	}); err != nil {
+		t.Fatal(err)
+	}
+
+	msg := &test_tpb.TestMessage{}
+	outboxAsserter.PopMessage(t, msg)
+	if msg.Message != "Hello, World!" {
+		t.Fatalf("expected message to be 'Hello, World!', got %q", msg.Message)
+	}
+}
+
+func TestOutboxSendDelayed(t *testing.T) {
+	ctx := context.Background()
+
+	conn := pgtest.GetTestDB(t)
+	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, `
+	CREATE TABLE outbox (
+		id uuid PRIMARY KEY,
+		headers text,
+		send_after timestamptz,
+		data jsonb
+	)`); err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := sqrlx.New(conn, sqrlx.Dollar)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testSender := outbox.DefaultSender
+	outboxAsserter := NewOutboxAsserter(t, conn)
+
+	err = db.Transact(context.Background(), mutableTxOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
+		return testSender.SendDelayed(ctx, tx, 5*time.Second, &test_tpb.TestMessage{
+			Message: "Hello, World!",
+		})
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 
