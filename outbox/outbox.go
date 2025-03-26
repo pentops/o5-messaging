@@ -14,19 +14,19 @@ import (
 )
 
 type Config struct {
-	TableName     string
-	IDColumn      string
-	HeadersColumn string
-	DataColumn    string
-	SendAfter     string
+	TableName       string
+	IDColumn        string
+	HeadersColumn   string
+	DataColumn      string
+	SendAfterColumn string
 }
 
 var DefaultConfig = Config{
-	TableName:     "outbox",
-	IDColumn:      "id",
-	HeadersColumn: "headers",
-	DataColumn:    "data",
-	SendAfter:     "send_after",
+	TableName:       "outbox",
+	IDColumn:        "id",
+	HeadersColumn:   "headers",
+	DataColumn:      "data",
+	SendAfterColumn: "send_after",
 }
 
 var ErrMaxDelayExceeded = errors.New("maximum delay exceeded")
@@ -81,7 +81,7 @@ func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, approxi
 	}
 
 	if approximateDelay > 0 {
-		sets[ss.SendAfter] = time.Now().Add(approximateDelay)
+		sets[ss.SendAfterColumn] = time.Now().Add(approximateDelay)
 	}
 
 	_, err = tx.Insert(ctx, sqrl.Insert(ss.TableName).SetMap(sets))
