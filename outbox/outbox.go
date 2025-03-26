@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"net/url"
+	"time"
 
 	"github.com/elgris/sqrl"
 	"github.com/pentops/o5-messaging/o5msg"
@@ -16,6 +17,7 @@ type Config struct {
 	IDColumn      string
 	HeadersColumn string
 	DataColumn    string
+	SendAfter     string
 }
 
 var DefaultConfig = Config{
@@ -23,6 +25,7 @@ var DefaultConfig = Config{
 	IDColumn:      "id",
 	HeadersColumn: "headers",
 	DataColumn:    "data",
+	SendAfter:     "send_after",
 }
 
 var DefaultSender *Sender = &Sender{
@@ -62,9 +65,17 @@ func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, approxi
 		"Content-Type": []string{"application/json"},
 	}
 
-	_, err = tx.Insert(ctx, sqrl.Insert(ss.TableName).
-		Columns(ss.IDColumn, ss.HeadersColumn, ss.DataColumn).
-		Values(wrapper.MessageId, headers.Encode(), msgBytes))
+	sets := map[string]interface{}{
+		ss.IDColumn:      wrapper.MessageId,
+		ss.HeadersColumn: headers.Encode(),
+		ss.DataColumn:    msgBytes,
+	}
+
+	if approximateDelay > 0 {
+		sets[ss.SendAfter] = time.Now().Add(approximateDelay)
+	}
+
+	_, err = tx.Insert(ctx, sqrl.Insert(ss.TableName).SetMap(sets))
 
 	return err
 }
