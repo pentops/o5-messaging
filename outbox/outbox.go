@@ -3,7 +3,9 @@ package outbox
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"net/url"
+	"time"
 
 	"github.com/elgris/sqrl"
 	"github.com/pentops/o5-messaging/o5msg"
@@ -12,18 +14,22 @@ import (
 )
 
 type Config struct {
-	TableName     string
-	IDColumn      string
-	HeadersColumn string
-	DataColumn    string
+	TableName       string
+	IDColumn        string
+	HeadersColumn   string
+	DataColumn      string
+	SendAfterColumn string
 }
 
 var DefaultConfig = Config{
-	TableName:     "outbox",
-	IDColumn:      "id",
-	HeadersColumn: "headers",
-	DataColumn:    "data",
+	TableName:       "outbox",
+	IDColumn:        "id",
+	HeadersColumn:   "headers",
+	DataColumn:      "data",
+	SendAfterColumn: "send_after",
 }
+
+var ErrMaxDelayExceeded = errors.New("maximum delay exceeded")
 
 var DefaultSender *Sender = &Sender{
 	Config:   DefaultConfig,
@@ -44,16 +50,20 @@ func NewSender(config Config) *Sender {
 
 // Send places the message in the outbox table.
 func (ss *Sender) Send(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Message) error {
-	return ss.SendDelayed(ctx, tx, msg, 0)
+	return ss.SendDelayed(ctx, tx, 0, msg)
 }
 
-func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, msg o5msg.Message, delay int) error {
+// SendDelayed places the message in the outbox table to be sent at approximately
+// the current time plus the delay. The delay must be less than 15 minutes.
+func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, approximateDelay time.Duration, msg o5msg.Message) error {
+	if approximateDelay > 15*time.Minute {
+		return ErrMaxDelayExceeded
+	}
+
 	wrapper, err := o5msg.WrapMessage(msg)
 	if err != nil {
 		return err
 	}
-
-	wrapper.DelaySeconds = int32(delay)
 
 	msgBytes, err := protojson.Marshal(wrapper)
 	if err != nil {
@@ -64,9 +74,17 @@ func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, msg o5m
 		"Content-Type": []string{"application/json"},
 	}
 
-	_, err = tx.Insert(ctx, sqrl.Insert(ss.TableName).
-		Columns(ss.IDColumn, ss.HeadersColumn, ss.DataColumn).
-		Values(wrapper.MessageId, headers.Encode(), msgBytes))
+	sets := map[string]interface{}{
+		ss.IDColumn:      wrapper.MessageId,
+		ss.HeadersColumn: headers.Encode(),
+		ss.DataColumn:    msgBytes,
+	}
+
+	if approximateDelay > 0 {
+		sets[ss.SendAfterColumn] = time.Now().Add(approximateDelay)
+	}
+
+	_, err = tx.Insert(ctx, sqrl.Insert(ss.TableName).SetMap(sets))
 
 	return err
 }
