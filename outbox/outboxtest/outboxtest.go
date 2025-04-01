@@ -12,6 +12,7 @@ import (
 	"github.com/pentops/sqrlx.go/sqrlx"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 type OutboxAsserter struct {
@@ -181,6 +182,31 @@ func (oa *OutboxAsserter) ForEachMessage(tb TB, fn func(*messaging_pb.Message)) 
 	if err != nil {
 		tb.Fatal(err)
 	}
+}
+
+func (oa *OutboxAsserter) ForEachProtoMessage(tb TB, cb func(proto.Message)) {
+	tb.Helper()
+	oa.ForEachMessage(tb, func(src *messaging_pb.Message) {
+
+		if src.Body.TypeUrl == "" {
+			tb.Fatalf("invalid empty type URL")
+		}
+		mt, err := protoregistry.GlobalTypes.FindMessageByURL(src.Body.TypeUrl)
+		if err != nil {
+			tb.Fatalf("failed to find message type: %v", err)
+		}
+		dst := mt.New().Interface()
+		switch src.Body.Encoding {
+		case messaging_pb.WireEncoding_PROTOJSON:
+			if err := protojson.Unmarshal(src.Body.Value, dst); err != nil {
+				tb.Fatalf("failed to unmarshal message: %v", err)
+			}
+		default:
+			tb.Fatalf("unsupported encoding: %v", src.Body.Encoding)
+
+		}
+		cb(dst)
+	})
 }
 
 type checker func(*messaging_pb.Message) (bool, error)
