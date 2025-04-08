@@ -99,22 +99,31 @@ func WrapMessage(msg Message) (*messaging_pb.Message, error) {
 		return nil, err
 	}
 
-	header := msg.O5MessageHeader()
+	wrapper := MessageWrapper(msg)
 
+	wrapper.Body = &messaging_pb.Any{
+		TypeUrl:  fmt.Sprintf("type.googleapis.com/%s", msg.ProtoReflect().Descriptor().FullName()),
+		Value:    bodyData,
+		Encoding: messaging_pb.WireEncoding_PROTOJSON,
+	}
+
+	return wrapper, nil
+}
+
+// MessageWrapper returns the *messaging_pb.Message for the given Message, but
+// does not set the Body field, allowing for other encodings. It does not set
+// SourceApp and SourceEnv, as they should be set by the infrastructure layer
+// when placing the message into a broker/bus.
+func MessageWrapper(msg Message) *messaging_pb.Message {
+	header := msg.O5MessageHeader()
 	wrapper := &messaging_pb.Message{
-		MessageId:   uuid.New().String(),
-		Timestamp:   timestamppb.Now(),
-		GrpcService: header.GrpcService,
-		GrpcMethod:  header.GrpcMethod,
-		Body: &messaging_pb.Any{
-			TypeUrl:  fmt.Sprintf("type.googleapis.com/%s", msg.ProtoReflect().Descriptor().FullName()),
-			Value:    bodyData,
-			Encoding: messaging_pb.WireEncoding_PROTOJSON,
-		},
+		MessageId:        uuid.New().String(),
+		Timestamp:        timestamppb.Now(),
+		GrpcService:      header.GrpcService,
+		GrpcMethod:       header.GrpcMethod,
 		DestinationTopic: header.DestinationTopic,
 		Headers:          header.Headers,
 		Extension:        header.Extension,
 	}
-
-	return wrapper, nil
+	return wrapper
 }
