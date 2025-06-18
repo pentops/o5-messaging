@@ -22,6 +22,7 @@ type OutboxAsserter struct {
 }
 
 type TB interface {
+	Errorf(format string, args ...any)
 	Fatal(args ...any)
 	Fatalf(format string, args ...any)
 	Helper()
@@ -106,22 +107,12 @@ func (oa *OutboxAsserter) PopMessage(tb TB, msg proto.Message, conditions ...con
 
 func (oa *OutboxAsserter) AssertEmpty(tb TB) {
 	tb.Helper()
-
-	q := sq.Select("COUNT(*)").
-		From(oa.TableName)
-
 	var count int
-	err := oa.db.Transact(getContext(tb), txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
-		err := tx.SelectRow(ctx, q).Scan(&count)
-		if err != nil {
-			return err
-		}
 
-		return nil
+	oa.ForEachMessage(tb, func(msg *messaging_pb.Message) {
+		count++
+		tb.Errorf("Unexpected Message %s/%s", msg.GrpcService, msg.GrpcMethod)
 	})
-	if err != nil {
-		tb.Fatal(err)
-	}
 
 	if count > 0 {
 		tb.Fatalf("expected outbox to be empty, but found %d messages", count)
