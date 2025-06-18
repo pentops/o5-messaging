@@ -93,7 +93,7 @@ func (oa *OutboxAsserter) PopMessage(tb TB, msg proto.Message, conditions ...con
 	wrapper, err := oa.popWrapper(getContext(tb), tb, *qc)
 	if errors.Is(err, sql.ErrNoRows) {
 		tb.Fatalf("no message found for type %s", typeURL)
-	} else if errors.Is(err, multiMatchError) {
+	} else if errors.Is(err, errMultiMatch) {
 		tb.Fatalf("found multiple messages for type %s", typeURL)
 	} else if err != nil {
 		tb.Fatal(err)
@@ -218,7 +218,7 @@ func messageTypeFilter(typeURL string) filter {
 	}
 }
 
-var multiMatchError = errors.New("multiple messages matched")
+var errMultiMatch = errors.New("multiple messages matched")
 
 func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions queryConditions) (*messaging_pb.Message, error) {
 	query := sq.Select(oa.DataColumn).
@@ -285,7 +285,7 @@ bodies:
 	}
 
 	if len(matchedMessages) > 1 {
-		return nil, multiMatchError
+		return nil, errMultiMatch
 	}
 
 	if len(matchedMessages) < 1 {

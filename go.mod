@@ -1,18 +1,18 @@
 module github.com/pentops/o5-messaging
 
-go 1.23.2
+go 1.24.0
 
-toolchain go1.23.5
+toolchain go1.24.2
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.35.1-20240920164238-5a7b106cbb87.1
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250603165357-b52ab10f4468.1
 	github.com/google/uuid v1.6.0
-	github.com/pentops/j5 v0.0.0-20250317180733-306c101af1ec
-	github.com/pentops/pgtest.go v0.0.0-20240806042712-cca5bdfe6542
-	github.com/pentops/sqrlx.go v0.0.0-20240806064322-33adc0ac5bd4
-	github.com/stretchr/testify v1.9.0
-	google.golang.org/grpc v1.67.1
-	google.golang.org/protobuf v1.35.1
+	github.com/pentops/j5 v0.0.0-20250617223808-91fae5a3b112
+	github.com/pentops/pgtest.go v0.0.0-20241223222214-7638cc50e15b
+	github.com/pentops/sqrlx.go v0.0.0-20250520210217-2f46de329c7a
+	github.com/stretchr/testify v1.10.0
+	google.golang.org/grpc v1.71.0
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
@@ -23,13 +23,11 @@ require (
 )
 
 require (
-	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pressly/goose v2.7.0+incompatible // indirect
-	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241021214115-324edc3d5d38 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 )

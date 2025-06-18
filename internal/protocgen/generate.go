@@ -93,7 +93,7 @@ func getFieldForType(message *protogen.Message, typeName string) (*protogen.Fiel
 		}
 		if string(msg.FullName()) == typeName {
 			if foundField != nil {
-				return nil, fmt.Errorf("Multiple %s messages in %s", typeName, message.Desc.FullName())
+				return nil, fmt.Errorf("multiple %s messages in %s", typeName, message.Desc.FullName())
 			}
 			foundField = field
 		}
@@ -103,7 +103,7 @@ func getFieldForType(message *protogen.Message, typeName string) (*protogen.Fiel
 		return nil, err
 	}
 	if foundField == nil {
-		return nil, fmt.Errorf("No %s messages in %s", typeName, message.Desc.FullName())
+		return nil, fmt.Errorf("no %s messages in %s", typeName, message.Desc.FullName())
 	}
 	return foundField, nil
 }
@@ -118,7 +118,7 @@ func getOptionalFieldForType(message *protogen.Message, typeName string) (*proto
 		}
 		if string(msg.FullName()) == typeName {
 			if foundField != nil {
-				return nil, fmt.Errorf("Multiple %s messages in %s", typeName, message.Desc.FullName())
+				return nil, fmt.Errorf("multiple %s messages in %s", typeName, message.Desc.FullName())
 			}
 			foundField = field
 		}
