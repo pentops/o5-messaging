@@ -7,7 +7,7 @@ toolchain go1.24.2
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250603165357-b52ab10f4468.1
 	github.com/google/uuid v1.6.0
-	github.com/pentops/j5 v0.0.0-20250617223808-91fae5a3b112
+	github.com/pentops/j5 v0.0.0-20250619022508-51d7758f272d
 	github.com/pentops/pgtest.go v0.0.0-20241223222214-7638cc50e15b
 	github.com/pentops/sqrlx.go v0.0.0-20250520210217-2f46de329c7a
 	github.com/stretchr/testify v1.10.0
