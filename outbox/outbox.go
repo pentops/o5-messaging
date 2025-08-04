@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/elgris/sqrl"
+	"github.com/pentops/j5/lib/j5codec"
 	"github.com/pentops/o5-messaging/o5msg"
 	"github.com/pentops/sqrlx.go/sqrlx"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type Config struct {
@@ -65,7 +65,7 @@ func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, approxi
 		return err
 	}
 
-	msgBytes, err := protojson.Marshal(wrapper)
+	msgBytes, err := j5codec.Global.ProtoToJSON(wrapper.ProtoReflect())
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (ss *Sender) SendDelayed(ctx context.Context, tx sqrlx.Transaction, approxi
 		"Content-Type": []string{"application/json"},
 	}
 
-	sets := map[string]interface{}{
+	sets := map[string]any{
 		ss.IDColumn:      wrapper.MessageId,
 		ss.HeadersColumn: headers.Encode(),
 		ss.DataColumn:    msgBytes,

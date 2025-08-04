@@ -36,7 +36,7 @@ func main() {
 			for x := 0; x < len(parts); x += 2 {
 				extraHeaders = append(extraHeaders, protocgen.KeyValue{
 					Key:  strings.TrimSpace(parts[x]),
-					Code: []interface{}{`"`, strings.TrimSpace(parts[x+1]), `"`},
+					Code: []any{`"`, strings.TrimSpace(parts[x+1]), `"`},
 				})
 			}
 		}

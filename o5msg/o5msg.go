@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/pentops/j5/lib/j5codec"
 	"github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -90,11 +90,11 @@ type Header struct {
 }
 
 // WrapMessage returns the *messaging_pb.Message for the given Message, using
-// protojson encoding. It does not set SourceApp and SourceEnv, as they should
+// j5-json encoding. It does not set SourceApp and SourceEnv, as they should
 // be set by the infrastructure layer when placing the message into a
 // broker/bus.
 func WrapMessage(msg Message) (*messaging_pb.Message, error) {
-	bodyData, err := protojson.Marshal(msg)
+	bodyData, err := j5codec.Global.ProtoToJSON(msg.ProtoReflect())
 	if err != nil {
 		return nil, err
 	}

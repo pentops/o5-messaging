@@ -7,10 +7,10 @@ import (
 	"fmt"
 
 	sq "github.com/elgris/sqrl"
+	"github.com/pentops/j5/lib/j5codec"
 	"github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb"
 	"github.com/pentops/o5-messaging/outbox"
 	"github.com/pentops/sqrlx.go/sqrlx"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
@@ -62,7 +62,7 @@ func MessageBodyMatches[T proto.Message](filter func(T) bool) condition {
 		conditions.checkers = append(conditions.checkers, func(wrapper *messaging_pb.Message) (bool, error) {
 			body := (*new(T)).ProtoReflect().New().Interface().(T)
 
-			err := protojson.Unmarshal(wrapper.Body.Value, body)
+			err := j5codec.Global.JSONToProto(wrapper.Body.Value, body.ProtoReflect())
 			if err != nil {
 				return false, fmt.Errorf("error unmarshalling body: %w", err)
 			}
@@ -99,7 +99,7 @@ func (oa *OutboxAsserter) PopMessage(tb TB, msg proto.Message, conditions ...con
 		tb.Fatal(err)
 	}
 
-	err = protojson.Unmarshal(wrapper.Body.Value, msg)
+	err = j5codec.Global.JSONToProto(wrapper.Body.Value, msg.ProtoReflect())
 	if err != nil {
 		tb.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func (oa *OutboxAsserter) ForEachMessage(tb TB, fn func(*messaging_pb.Message)) 
 			}
 
 			wrapper := &messaging_pb.Message{}
-			err := protojson.Unmarshal(msgBody, wrapper)
+			err := j5codec.Global.JSONToProto(msgBody, wrapper.ProtoReflect())
 			if err != nil {
 				return err
 			}
@@ -189,7 +189,7 @@ func (oa *OutboxAsserter) ForEachProtoMessage(tb TB, cb func(proto.Message)) {
 		dst := mt.New().Interface()
 		switch src.Body.Encoding {
 		case messaging_pb.WireEncoding_PROTOJSON:
-			if err := protojson.Unmarshal(src.Body.Value, dst); err != nil {
+			if err := j5codec.Global.JSONToProto(src.Body.Value, dst.ProtoReflect()); err != nil {
 				tb.Fatalf("failed to unmarshal message: %v", err)
 			}
 		default:
@@ -268,7 +268,7 @@ func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions quer
 bodies:
 	for _, body := range bodies {
 		wrapper := &messaging_pb.Message{}
-		if err := protojson.Unmarshal(body, wrapper); err != nil {
+		if err := j5codec.Global.JSONToProto(body, wrapper.ProtoReflect()); err != nil {
 			return nil, err
 		}
 

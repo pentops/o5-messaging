@@ -22,7 +22,7 @@ var (
 
 type KeyValue struct {
 	Key  string
-	Code []interface{}
+	Code []any
 }
 
 type Config struct {
@@ -52,10 +52,10 @@ func (cfg Config) generateFile(gen *protogen.Plugin, file *protogen.File) (*prot
 
 	var g *protogen.GeneratedFile
 	for _, service := range file.Services {
-		opts, _ := proto.GetExtension(service.Desc.Options(), messaging_j5pb.E_Service).(*messaging_j5pb.ServiceConfig)
+		opts, _ := proto.GetExtension(service.Desc.Options(), messaging_j5pb.E_Service).(*messaging_j5pb.ServiceConfig) //nolint: forbidigo
 		if opts == nil {
 
-			oldAnnotation, _ := proto.GetExtension(service.Desc.Options(), messaging_j5pb.E_Config).(*messaging_j5pb.Config)
+			oldAnnotation, _ := proto.GetExtension(service.Desc.Options(), messaging_j5pb.E_Config).(*messaging_j5pb.Config) //nolint: forbidigo
 			if oldAnnotation == nil {
 				continue
 			}
@@ -271,7 +271,7 @@ func (cfg Config) genServiceExtension(g *protogen.GeneratedFile, service *protog
 		g.P("    GrpcMethod: \"", method.Desc.Name(), "\",")
 		g.P("    Headers: map[string]string{")
 		for _, header := range cfg.ExtraHeaders {
-			codeLine := append([]interface{}{`"`, header.Key, `": `}, header.Code...)
+			codeLine := append([]any{`"`, header.Key, `": `}, header.Code...)
 			codeLine = append(codeLine, ",")
 			g.P(codeLine...)
 		}
