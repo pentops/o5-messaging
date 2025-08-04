@@ -104,7 +104,7 @@ func WrapMessage(msg Message) (*messaging_pb.Message, error) {
 	wrapper.Body = &messaging_pb.Any{
 		TypeUrl:  fmt.Sprintf("type.googleapis.com/%s", msg.ProtoReflect().Descriptor().FullName()),
 		Value:    bodyData,
-		Encoding: messaging_pb.WireEncoding_PROTOJSON,
+		Encoding: messaging_pb.WireEncoding_J5_JSON,
 	}
 
 	return wrapper, nil
