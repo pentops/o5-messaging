@@ -11,6 +11,7 @@ import (
 	"github.com/pentops/o5-messaging/gen/o5/messaging/v1/messaging_pb"
 	"github.com/pentops/o5-messaging/outbox"
 	"github.com/pentops/sqrlx.go/sqrlx"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
@@ -189,9 +190,14 @@ func (oa *OutboxAsserter) ForEachProtoMessage(tb TB, cb func(proto.Message)) {
 		dst := mt.New().Interface()
 		switch src.Body.Encoding {
 		case messaging_pb.WireEncoding_PROTOJSON:
+			if err := protojson.Unmarshal(src.Body.Value, dst); err != nil { // nolint:forbidigo
+				tb.Fatalf("failed to unmarshal message: %v", err)
+			}
+		case messaging_pb.WireEncoding_J5_JSON:
 			if err := j5codec.Global.JSONToProto(src.Body.Value, dst.ProtoReflect()); err != nil {
 				tb.Fatalf("failed to unmarshal message: %v", err)
 			}
+
 		default:
 			tb.Fatalf("unsupported encoding: %v", src.Body.Encoding)
 
