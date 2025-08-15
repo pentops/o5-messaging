@@ -227,7 +227,7 @@ func messageTypeFilter(typeURL string) filter {
 var errMultiMatch = errors.New("multiple messages matched")
 
 func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions queryConditions) (*messaging_pb.Message, error) {
-	query := sq.Select(oa.DataColumn).
+	query := sq.Select(oa.IDColumn, oa.DataColumn).
 		From(oa.TableName).
 		OrderBy(oa.IDColumn)
 
@@ -235,12 +235,14 @@ func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions quer
 		filter(query, oa.Config)
 	}
 
-	bodies := make([][]byte, 0, 1)
+	type messageRow struct {
+		ID   string
+		Body []byte
+	}
+	messageRows := make([]*messageRow, 0)
 
 	err := oa.db.Transact(ctx, txOptions, func(ctx context.Context, tx sqrlx.Transaction) error {
 		tb.Helper()
-
-		var msgBody []byte
 
 		rows, err := tx.Select(ctx, query)
 		if err != nil {
@@ -250,12 +252,12 @@ func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions quer
 		defer rows.Close()
 
 		for rows.Next() {
-			err := rows.Scan(&msgBody)
+			msgRow := &messageRow{}
+			err := rows.Scan(&msgRow.ID, &msgRow.Body)
 			if err != nil {
 				return err
 			}
-
-			bodies = append(bodies, msgBody)
+			messageRows = append(messageRows, msgRow)
 		}
 
 		err = rows.Err()
@@ -272,11 +274,14 @@ func (oa *OutboxAsserter) popWrapper(ctx context.Context, tb TB, conditions quer
 	matchedMessages := make([]*messaging_pb.Message, 0, 1)
 
 bodies:
-	for _, body := range bodies {
+	for _, row := range messageRows {
 		wrapper := &messaging_pb.Message{}
-		if err := j5codec.Global.JSONToProto(body, wrapper.ProtoReflect()); err != nil {
+		if err := j5codec.Global.JSONToProto(row.Body, wrapper.ProtoReflect()); err != nil {
 			return nil, err
 		}
+		// replicates sidecar behavior, making messageID optional, useful in
+		// INSERT INTO outbox (SELECT...)
+		wrapper.MessageId = row.ID
 
 		for _, check := range conditions.checkers {
 			matches, err := check(wrapper)
