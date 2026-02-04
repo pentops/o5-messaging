@@ -43,6 +43,8 @@ type Collector[T any] interface {
 	Collect(sendContext T, msg Message)
 }
 
+type PublishFunc func(ctx context.Context, msg Message) error
+
 // Publisher sends messages directly, no transactions or queues. Useful for
 // workers which aren't using an outbox pattern
 type Publisher interface {
