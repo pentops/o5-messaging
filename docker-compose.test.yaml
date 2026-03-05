@@ -2,7 +2,7 @@ version: '2.4'
 
 services:
   database:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     environment:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
@@ -14,7 +14,7 @@ services:
       retries: 5
 
   test:
-    image: golang:1.24
+    image: golang:1.25
     links:
       - database
     volumes:

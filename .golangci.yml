@@ -32,8 +32,6 @@ linters:
   settings:
     forbidigo:
       forbid:
-        - pattern: ^proto\.GetExtension.*$
-          msg: "Use protosrc.GetExtension instead of proto.GetExtension"
         - pattern: ^protojson.*
           msg: "Use j5codec instead of protojson"
         - pattern: ^(fmt\.Print(|f|ln))$
